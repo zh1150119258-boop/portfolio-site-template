@@ -1,0 +1,74 @@
+# 后台上传原片后由网站自动触发：下载原片 → 生成原画 / 流畅 / 预览 / 封面 → 上传 R2 → 通知网站「已就绪」。
+# 需要在仓库 Settings → Secrets and variables → Actions 里配置：
+#   R2_ACCESS_KEY_ID、R2_SECRET_ACCESS_KEY、R2_ENDPOINT（https://<账号ID>.r2.cloudflarestorage.com）、R2_BUCKET、MEDIA_CALLBACK_SECRET
+name: process-media
+
+on:
+  workflow_dispatch:
+    inputs:
+      group: { description: "作品组编号", required: true }
+      media_base: { description: "媒体文件夹，例如 brand/xxx", required: true }
+      sources: { description: "原片在 R2 里的路径（JSON 数组）", required: true }
+      callback_url: { description: "完成后通知的网址", required: true }
+
+concurrency:
+  group: process-media-${{ inputs.group }}
+  cancel-in-progress: false
+
+jobs:
+  process:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: auto
+      # R2 不支持 AWS CLI 新版默认的额外校验和
+      AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+      AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+      R2: ${{ secrets.R2_ENDPOINT }}
+      BUCKET: ${{ secrets.R2_BUCKET }}
+      GROUP: ${{ inputs.group }}
+      MEDIA_BASE: ${{ inputs.media_base }}
+      SOURCES: ${{ inputs.sources }}
+      CALLBACK: ${{ inputs.callback_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { sparse-checkout: scripts }
+
+      - name: 检查参数
+        run: |
+          [[ "$GROUP" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]] || { echo "bad group"; exit 1; }
+          [[ "$MEDIA_BASE" == "brand/$GROUP" ]] || { echo "bad media base"; exit 1; }
+          [[ "$CALLBACK" == https://* ]] || { echo "bad callback"; exit 1; }
+
+      - name: 安装 FFmpeg
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+
+      - name: 下载原片
+        run: |
+          mkdir -p src
+          echo "$SOURCES" | jq -r '.[]' | while read -r key; do
+            [[ "$key" == uploads/$GROUP/* ]] || { echo "bad key $key"; exit 1; }
+            aws s3 cp --endpoint-url "$R2" "s3://$BUCKET/$key" "src/$(basename "$key")" --no-progress
+          done
+
+      - name: 转码
+        run: bash scripts/ci-process-group.sh src "$MEDIA_BASE" out
+
+      - name: 上传到 R2
+        run: |
+          put() { aws s3 cp --endpoint-url "$R2" "$1" "s3://$BUCKET/$2" --no-progress --content-type "$3" --cache-control "public, max-age=31536000, immutable"; }
+          for f in out/$MEDIA_BASE/*.mp4 out/streams-balanced/$MEDIA_BASE/*.mp4 out/previews/$MEDIA_BASE/*.mp4; do put "$f" "${f#out/}" video/mp4; done
+          for f in out/posters/$MEDIA_BASE/*.jpg; do put "$f" "${f#out/}" image/jpeg; done
+
+      - name: 通知网站：已就绪
+        run: |
+          body=$(jq -n --arg g "$GROUP" --argjson c "$(cat out/count.txt)" --argjson s "$(cat out/sizes.json)" --argjson n "$(cat out/clips.json)" '{group:$g, ok:true, count:$c, sizes:$s, clips:$n}')
+          curl -fsS -X POST "$CALLBACK" -H "Authorization: Bearer ${{ secrets.MEDIA_CALLBACK_SECRET }}" -H "Content-Type: application/json" -d "$body"
+
+      - name: 通知网站：失败
+        if: failure()
+        run: |
+          body=$(jq -n --arg g "$GROUP" --arg e "转码失败，详情见 GitHub Actions 运行记录 #${{ github.run_number }}" '{group:$g, ok:false, error:$e}')
+          curl -sS -X POST "$CALLBACK" -H "Authorization: Bearer ${{ secrets.MEDIA_CALLBACK_SECRET }}" -H "Content-Type: application/json" -d "$body" || true

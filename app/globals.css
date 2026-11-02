@@ -1,0 +1,94 @@
+/* 全站样式。颜色变量由后台「网站设置 → 配色」生成（见 app/_site/theme.ts），这里是没有设置时的兜底。 */
+:root { --paper: #f4f3f0; --ink: #111; --muted: #7a7a76; --line: rgba(0,0,0,.14); --gutter: clamp(16px, 4vw, 48px); color-scheme: light; }
+@media (prefers-color-scheme: dark) { :root { --paper: #0c0c0c; --ink: #f4f3f0; --line: rgba(255,255,255,.2); color-scheme: dark; } }
+
+* { box-sizing: border-box; }
+html { background: var(--paper); -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.6 -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", system-ui, sans-serif; }
+a { color: inherit; text-decoration: none; }
+img, video { display: block; max-width: 100%; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+
+/* ---------- 页头 / 页脚 ---------- */
+.site-header { position: sticky; top: 0; z-index: 10; display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding: 18px var(--gutter); background: color-mix(in srgb, var(--paper) 88%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.site-name { font-weight: 600; letter-spacing: .02em; white-space: nowrap; }
+.site-nav { display: flex; gap: clamp(14px, 3vw, 32px); font-size: 15px; }
+.site-nav a { color: var(--muted); transition: color .2s; }
+.site-nav a:hover, .site-nav a[aria-current="page"] { color: var(--ink); }
+.site-footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 24px; padding: 48px var(--gutter) 32px; color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); margin-top: 96px; }
+
+main { padding: 0 var(--gutter); }
+.page-head { padding: clamp(40px, 9vw, 120px) 0 clamp(28px, 5vw, 56px); }
+.page-head h1 { margin: 0; font-size: clamp(34px, 7vw, 88px); line-height: 1.05; font-weight: 500; letter-spacing: -.02em; }
+.page-head p { margin: 14px 0 0; max-width: 40em; color: var(--muted); }
+.crumbs { display: flex; flex-wrap: wrap; gap: 6px; font-size: 13px; color: var(--muted); margin-bottom: 14px; }
+.crumbs a:hover { color: var(--ink); }
+.crumbs span::before { content: "/"; margin-right: 6px; }
+.section-title { display: flex; justify-content: space-between; align-items: baseline; margin: 24px 0 18px; font-size: 14px; color: var(--muted); }
+.section-title a:hover { color: var(--ink); }
+
+/* ---------- 作品卡片 ---------- */
+.grid { display: grid; gap: clamp(14px, 2.4vw, 28px); grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); align-items: start; }
+.card { display: block; }
+.card .frame { position: relative; overflow: hidden; background: var(--line); border-radius: 2px; }
+.card .frame img, .card .frame video { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
+.card .frame video { opacity: 0; transition: opacity .35s; }
+.card .frame video.on { opacity: 1; }
+.card .meta { display: flex; justify-content: space-between; gap: 12px; padding-top: 10px; font-size: 14px; }
+.card .meta span:last-child { color: var(--muted); white-space: nowrap; }
+.card:hover .meta span:first-child { text-decoration: underline; text-underline-offset: 3px; }
+
+/* 分类列表 */
+.list { border-top: 1px solid var(--line); }
+.list a { display: grid; grid-template-columns: 3em 1fr auto; gap: 16px; align-items: baseline; padding: 22px 0; border-bottom: 1px solid var(--line); }
+.list .no { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.list .name { font-size: clamp(22px, 3.6vw, 40px); line-height: 1.15; }
+.list .count { color: var(--muted); font-size: 13px; }
+.list a:hover .name { text-decoration: underline; text-underline-offset: 6px; text-decoration-thickness: 1px; }
+.empty { color: var(--muted); padding: 40px 0; }
+
+/* ---------- 作品详情 / 播放器 ---------- */
+.film { display: grid; gap: 28px; padding-top: 24px; }
+.player { position: relative; margin: 0 auto; width: 100%; background: #000; overflow: hidden; }
+.player video, .player img { width: 100%; height: 100%; object-fit: contain; position: absolute; inset: 0; background: #000; }
+.player .play { position: absolute; inset: 0; display: grid; place-items: center; border: 0; background: transparent; cursor: pointer; }
+.player .play span { padding: 12px 22px; border-radius: 999px; background: rgba(0,0,0,.55); color: #fff; font-size: 15px; backdrop-filter: blur(6px); }
+.player .status { position: absolute; left: 12px; bottom: 12px; padding: 4px 10px; border-radius: 999px; background: rgba(0,0,0,.55); color: #fff; font-size: 12px; }
+.film-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.film-bar h1 { margin: 0; font-size: clamp(22px, 3.4vw, 36px); font-weight: 500; }
+.quality { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; font-size: 13px; }
+.quality button { border: 0; background: none; padding: 6px 14px; cursor: pointer; color: var(--muted); }
+.quality button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+.film-nav { display: flex; justify-content: space-between; gap: 16px; font-size: 14px; color: var(--muted); }
+.film-nav a:hover { color: var(--ink); }
+.details { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); border-top: 1px solid var(--line); padding-top: 22px; }
+.details dt { color: var(--muted); font-size: 13px; margin-bottom: 6px; }
+.details dd { margin: 0; white-space: pre-line; }
+
+/* ---------- 关于 / 联系 ---------- */
+.about { display: grid; gap: 48px; max-width: 920px; }
+.statement { margin: 0; font-size: clamp(28px, 5vw, 56px); line-height: 1.2; font-weight: 500; }
+.statement span { display: block; }
+.statement span:last-child { text-decoration: underline; text-underline-offset: .18em; text-decoration-thickness: 2px; }
+.prose p { margin: 0 0 1em; max-width: 38em; }
+.lead { font-size: clamp(18px, 2.2vw, 22px); }
+.tags { display: flex; flex-wrap: wrap; gap: 8px; padding: 0; margin: 0; list-style: none; }
+.tags li { border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px; font-size: 14px; }
+table.jobs { width: 100%; border-collapse: collapse; }
+table.jobs td { padding: 14px 12px 14px 0; border-top: 1px solid var(--line); vertical-align: top; }
+table.jobs td:first-child { color: var(--muted); white-space: nowrap; width: 9em; font-variant-numeric: tabular-nums; }
+.contact-list { display: grid; gap: 0; border-top: 1px solid var(--line); max-width: 720px; }
+.contact-list div { display: grid; grid-template-columns: 7em 1fr; gap: 16px; padding: 18px 0; border-bottom: 1px solid var(--line); }
+.contact-list dt { color: var(--muted); }
+.contact-list dd { margin: 0; word-break: break-all; }
+.button { display: inline-block; margin-top: 28px; padding: 12px 24px; border-radius: 999px; background: var(--ink); color: var(--paper); }
+
+@media (max-width: 640px) {
+  .site-header { flex-direction: column; align-items: flex-start; gap: 6px; padding-top: 14px; padding-bottom: 12px; }
+  .list a { grid-template-columns: 2.2em 1fr; }
+  .list .count { grid-column: 2; }
+  table.jobs td:first-child { width: 6.5em; }
+  .contact-list div { grid-template-columns: 1fr; gap: 4px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }

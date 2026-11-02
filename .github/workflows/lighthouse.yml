@@ -1,0 +1,31 @@
+# 网站每次部署成功后，自动给几个关键页面打分（也可以手动：Actions → lighthouse → Run workflow）。
+# 用谷歌官方 Lighthouse CI（https://github.com/GoogleChrome/lighthouse-ci），每页测 3 次取中间值。
+# 分数低于 .github/lighthouse/lighthouserc.json 里的标准时会显示黄色警告；只提醒，不影响网站。
+# 完整报告在本次运行页面底部的「Artifacts」里下载。
+name: lighthouse
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: [deploy]
+    types: [completed]
+jobs:
+  audit:
+    if: ${{ vars.SITE_URL != '' && (github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with: { sparse-checkout: .github/lighthouse }
+      - name: 等新版本生效
+        if: ${{ github.event_name == 'workflow_run' }}
+        run: sleep 60
+      - uses: treosh/lighthouse-ci-action@v12
+        with:
+          # 把 example.com 换成你的域名（仓库 Variable SITE_URL，例如 https://example.com）
+          urls: |
+            ${{ vars.SITE_URL }}/
+            ${{ vars.SITE_URL }}/work
+            ${{ vars.SITE_URL }}/about
+          configPath: .github/lighthouse/lighthouserc.json
+          runs: 3
+          uploadArtifacts: true

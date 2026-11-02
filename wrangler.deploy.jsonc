@@ -1,0 +1,30 @@
+// 部署配置（GitHub Actions 的 deploy 工作流用它把网站部署到 Cloudflare）。
+// 新建网站时要改的地方都标了「改」。这里不写任何密码或令牌。
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // 改：Worker 名字（Cloudflare 后台里看到的名字，小写字母和连字符）
+  "name": "my-portfolio",
+  "main": "./dist/server/index.js",
+  "compatibility_date": "2026-05-15",
+  "compatibility_flags": ["nodejs_compat"],
+  "no_bundle": true,
+  // 保留在 Cloudflare 后台填写的变量，部署时不覆盖
+  "keep_vars": true,
+  // 改：GITHUB_REPO 换成「你的 GitHub 用户名/仓库名」（后台上传后靠它通知 GitHub 转码）
+  "vars": { "GITHUB_REPO": "your-github-name/your-repo", "GITHUB_REF": "main" },
+  "rules": [{ "type": "ESModule", "globs": ["**/*.js", "**/*.mjs"] }],
+  "assets": { "directory": "./dist/client-deploy", "binding": "ASSETS", "run_worker_first": true },
+  // 后台邮箱验证码：只能发到这个固定邮箱。改：换成 site.config.ts 里的 ADMIN_EMAIL（需先在 Cloudflare「电子邮件路由」里验证）
+  "send_email": [{ "name": "ADMIN_MAIL", "destination_address": "you@example.com" }],
+  // 当前部署的版本号：页面缓存按版本区分，部署新版后不会给出引用旧脚本的旧页面
+  "version_metadata": { "binding": "CF_VERSION" },
+  // 网站自己的访问计数（worker/hits.ts），后台「访问统计」读取。需要在 Cloudflare 后台开通 Analytics Engine
+  "analytics_engine_datasets": [{ "binding": "VIEWS", "dataset": "site_views" }],
+  // 改：R2 存储桶名字
+  "r2_buckets": [{ "binding": "MEDIA_BUCKET", "bucket_name": "my-portfolio-media" }],
+  // 改：你的域名（zone_name 是在 Cloudflare 里添加的域名）
+  "routes": [
+    { "pattern": "example.com/*", "zone_name": "example.com" },
+    { "pattern": "www.example.com/*", "zone_name": "example.com" }
+  ]
+}

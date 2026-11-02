@@ -1,0 +1,12 @@
+{
+  "featured": [],
+  "groups": {},
+  "tree": {
+    "name": "作品",
+    "note": "选择一个分类，浏览对应的项目",
+    "children": [
+      { "slug": "film", "name": "视频", "note": "品牌短片、广告与剪辑作品", "empty": "作品整理中，敬请期待。", "children": [] },
+      { "slug": "short", "name": "短视频", "note": "社交平台短视频与日常记录", "empty": "作品整理中，敬请期待。", "children": [] }
+    ]
+  }
+}

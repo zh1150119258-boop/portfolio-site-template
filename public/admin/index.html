@@ -1,0 +1,1540 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>作品管理</title>
+<style>
+  :root { --paper: #f1eeea; --card: #fbfaf8; --ink: #141414; --muted: #77726c; --line: #ddd8d1; --accent: #2b5cd6; --danger: #b3261e; --ok: #1f7a3f; --warn: #a86400; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 14px/1.5 -apple-system, "PingFang SC", "Noto Sans SC", system-ui, sans-serif; }
+  header { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 16px; padding: 14px 24px; background: rgba(241, 238, 234, .92); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+  header h1 { margin: 0; font-size: 16px; font-weight: 600; white-space: nowrap; }
+  header .hint { color: var(--muted); font-size: 13px; }
+  header .spacer { flex: 1; }
+  button { font: inherit; cursor: pointer; border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 6px; padding: 4px 10px; }
+  button:hover { border-color: #b9b2a9; }
+  button.primary { background: var(--ink); color: #fff; border-color: var(--ink); padding: 7px 16px; }
+  button.primary:disabled { opacity: .35; cursor: default; }
+  button.link { border: none; background: none; padding: 2px 4px; color: var(--accent); }
+  button.danger { color: var(--danger); }
+  button.icon { padding: 2px 7px; color: var(--muted); }
+  input, textarea, select { font: inherit; color: inherit; border: 1px solid var(--line); background: #fff; border-radius: 5px; padding: 4px 7px; }
+  textarea { width: 100%; min-height: 54px; resize: vertical; }
+  input.name { flex: 1 1 auto; border-color: transparent; background: transparent; font-weight: 500; min-width: 0; width: auto; }
+  input.name:hover, input.name:focus { border-color: var(--line); background: #fff; }
+  .shell { display: grid; grid-template-columns: 188px minmax(0, 1fr); align-items: start; }
+  #nav { position: sticky; top: 61px; display: flex; flex-direction: column; gap: 2px; padding: 20px 12px; height: calc(100vh - 61px); border-right: 1px solid var(--line); }
+  #nav button { text-align: left; border: 0; background: none; padding: 9px 12px; border-radius: 8px; color: var(--muted); font-size: 14px; }
+  #nav button:hover { background: rgba(0,0,0,.04); color: var(--ink); }
+  #nav .nav-gap { flex: 1; } #nav .nav-sub { font-size: 13px; }
+  #nav button.on { background: var(--card); color: var(--ink); font-weight: 600; box-shadow: 0 0 0 1px var(--line); }
+  main { padding: 24px; min-width: 0; }
+  .cols { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 20px; align-items: start; }
+  .cols.even { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cols > aside > section.panel + section.panel { margin-top: 16px; }
+  .cols > section.panel + section.panel { margin-top: 0; }
+  .panel-wrap { max-width: 1120px; }
+  .panel-wrap > .card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+  .panel-wrap > .card-head h2 { margin: 0; font-size: 18px; flex: 1; }
+  .view > section.panel { max-width: 860px; }
+  section.panel { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+  section.panel + section.panel { margin-top: 16px; }
+  section.panel h2 { margin: 0 0 4px; font-size: 14px; }
+  section.panel p.sub { margin: 0 0 12px; color: var(--muted); font-size: 12.5px; }
+  .tree ul { list-style: none; margin: 0; padding: 0 0 0 22px; border-left: 1px dashed var(--line); }
+  .tree > ul { padding-left: 0; border: none; }
+  .row { position: relative; display: flex; align-items: center; gap: 8px; margin: 3px 0; padding: 5px 8px; border: 1px solid transparent; border-radius: 7px; background: transparent; }
+  .row:hover { background: #fff; border-color: var(--line); }
+  .row.cat { font-size: 14.5px; }
+  .row.cat > .kind { color: var(--muted); font-size: 12px; }
+  .row .grip { cursor: grab; color: #b3ada5; user-select: none; padding: 0 2px; }
+  .row .toggle { width: 18px; color: var(--muted); border: none; background: none; padding: 0; }
+  .row .meta { color: var(--muted); font-size: 12px; white-space: nowrap; }
+  .row .actions { flex: 0 0 auto; display: flex; gap: 2px; white-space: nowrap; opacity: 0; transition: opacity .15s; }
+  .row:hover .actions, .row:focus-within .actions { opacity: 1; }
+  .thumb { flex: 0 0 auto; width: 30px; height: 40px; object-fit: cover; border-radius: 3px; background: #ddd; }
+  .row.drop-before::before, .row.drop-after::after { content: ""; position: absolute; left: 0; right: 0; height: 2px; background: var(--accent); }
+  .row.drop-before::before { top: -3px; } .row.drop-after::after { bottom: -3px; }
+  .row.drop-inside { border-color: var(--accent); background: #eef2fd; }
+  .row.dragging { opacity: .35; }
+  .details { margin: 2px 0 10px 34px; padding: 12px; background: #fff; border: 1px solid var(--line); border-radius: 8px; display: grid; grid-template-columns: 90px minmax(0, 1fr); gap: 8px 10px; align-items: center; }
+  .details label { color: var(--muted); font-size: 12.5px; }
+  .details .full { grid-column: 1 / -1; }
+  .names { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+  .names input { width: 100%; }
+  .empty-note { color: var(--muted); font-size: 12.5px; padding: 4px 8px 4px 34px; }
+  .list { display: flex; flex-direction: column; gap: 4px; }
+  .list .row { background: #fff; border-color: var(--line); }
+  .list .row .actions { opacity: 1; }
+  .form { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 8px 10px; align-items: center; }
+  .form label { color: var(--muted); font-size: 12.5px; }
+  .form input, .form select, .form textarea { width: 100%; }
+  .seg { display: flex; gap: 6px; } .seg button.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+  table.check { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
+  table.check td, table.check th { padding: 3px 4px; border-bottom: 1px solid var(--line); text-align: left; }
+  .s-ok { color: var(--ok); } .s-bad { color: var(--danger); }
+  .msg { margin: 10px 0 0; padding: 8px 10px; border-radius: 6px; font-size: 13px; }
+  .msg.err { background: #fbeceb; color: var(--danger); } .msg.ok { background: #e9f5ee; color: var(--ok); }
+  .msg ul { margin: 4px 0 0; padding-left: 18px; }
+  .dirty { color: var(--warn); font-size: 13px; }
+  .toolbar { display: flex; gap: 8px; margin-bottom: 10px; }
+  details.help { color: var(--muted); font-size: 12.5px; margin-top: 6px; } details.help summary { cursor: pointer; }
+  .clips { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; }
+  .clip { position: relative; border: 1px solid var(--line); border-radius: 6px; background: var(--card); padding: 4px; font-size: 11.5px; }
+  .clip img { display: block; width: 100%; aspect-ratio: 3 / 4; object-fit: cover; border-radius: 4px; background: #ddd; cursor: pointer; }
+  .clip .no { position: absolute; top: 7px; left: 7px; background: rgba(0,0,0,.6); color: #fff; border-radius: 3px; padding: 0 4px; }
+  .clip .ops { display: flex; flex-wrap: wrap; gap: 2px; margin-top: 4px; }
+  .clip .ops button { padding: 1px 5px; font-size: 11.5px; }
+  .clip.off { opacity: .45; }
+  .modal { position: fixed; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center; background: rgba(20,20,20,.72); padding: 20px; }
+  .modal > div { width: 100%; max-width: 760px; max-height: 100%; overflow: auto; background: var(--card); border-radius: 12px; padding: 18px; }
+  .modal video { display: block; width: 100%; max-height: 62vh; background: #000; border-radius: 6px; }
+  .tag { display: inline-block; padding: 0 6px; border-radius: 4px; background: #f3e6cc; color: var(--warn); font-size: 11.5px; }
+  .modal.wide > div { max-width: 1120px; }
+  .dash { display: grid; gap: 14px; }
+  .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+  .kpi { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  .kpi .label { color: var(--muted); font-size: 12px; }
+  .kpi .value { font-size: 26px; font-weight: 600; letter-spacing: -.02em; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .kpi .delta { font-size: 12px; margin-top: 2px; } .up { color: var(--ok); } .down { color: var(--danger); } .flat { color: var(--muted); }
+  .card { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 14px; min-width: 0; }
+  .card h3 { margin: 0 0 10px; font-size: 13.5px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .card h3 small { color: var(--muted); font-weight: 400; font-size: 12px; }
+  .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+  .bars { display: flex; flex-direction: column; gap: 5px; }
+  .bar { position: relative; display: flex; justify-content: space-between; gap: 10px; padding: 5px 8px; font-size: 12.5px; border-radius: 5px; overflow: hidden; }
+  .bar > i { position: absolute; inset: 0 auto 0 0; background: #ece6dd; border-radius: 5px; z-index: 0; }
+  .bar > span { position: relative; z-index: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bar > b { position: relative; z-index: 1; font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .bar > b em { color: var(--muted); font-style: normal; font-weight: 400; margin-left: 6px; }
+  .chart { position: relative; } .chart svg { display: block; width: 100%; overflow: visible; }
+  .chart .tip { position: absolute; pointer-events: none; background: var(--ink); color: #fff; font-size: 12px; padding: 5px 8px; border-radius: 6px; white-space: nowrap; transform: translate(-50%, -110%); display: none; }
+  .legend { display: flex; gap: 14px; font-size: 12px; color: var(--muted); } .legend i { display: inline-block; width: 10px; height: 3px; border-radius: 2px; margin-right: 5px; vertical-align: middle; }
+  .empty { color: var(--muted); font-size: 12.5px; padding: 8px 0; }
+  @media (max-width: 800px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .grid2, .grid3 { grid-template-columns: 1fr; } }
+  .tabs { display: flex; gap: 4px; margin-bottom: 10px; flex-wrap: wrap; } .tabs button.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+  table.jobs { width: 100%; border-collapse: collapse; } table.jobs td { padding: 2px; } table.jobs input { width: 100%; }
+  @media (max-width: 1100px) { .cols, .cols.even { grid-template-columns: 1fr; } }
+  @media (max-width: 800px) {
+    .shell { grid-template-columns: 1fr; }
+    #nav { position: sticky; top: 0; z-index: 4; flex-direction: row; height: auto; overflow-x: auto; padding: 8px 10px; border-right: 0; border-bottom: 1px solid var(--line); background: var(--paper); }
+    #nav button { white-space: nowrap; padding: 7px 11px; }
+  }
+  /* 手机：按钮常显（没有鼠标悬停），行内信息换到下一行；拖动在手机上不可用，用 ↑↓ 和「移到」 */
+  @media (hover: none) { .row .actions { opacity: 1; } .row .grip { display: none; } }
+  @media (max-width: 700px) {
+    header { flex-wrap: wrap; gap: 8px; padding: 10px 14px; }
+    header .hint { display: none; }
+    header h1 { flex: 1; }
+    main { padding: 12px; gap: 12px; }
+    section.panel { padding: 12px; }
+    .tree ul { padding-left: 12px; }
+    .row { flex-wrap: wrap; row-gap: 4px; }
+    .row .meta { order: 5; width: 100%; padding-left: 26px; white-space: normal; }
+    .row .actions { order: 6; width: 100%; padding-left: 26px; flex-wrap: wrap; opacity: 1; }
+    .details { margin-left: 0; grid-template-columns: 1fr; }
+    .form { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>作品管理</h1>
+  <span class="hint" id="mode-hint">拖动 ⋮⋮ 排序或移动；改完点「保存」。</span>
+  <span class="spacer"></span>
+  <span id="dirty" class="dirty"></span>
+  <a href="/" target="_blank"><button>打开网站</button></a>
+  <button id="revert">放弃修改</button>
+  <button id="save" class="primary" disabled>保存</button>
+</header>
+<div id="save-msg" style="padding: 0 24px"></div>
+<div class="shell">
+  <nav id="nav">
+    <button data-view="works" class="on">作品与分类</button>
+    <button data-view="upload">上传作品</button>
+    <button data-view="site" data-online>网站设置</button>
+    <button data-view="about" data-online>关于页与履历</button>
+    <button data-view="stats" data-online>访问统计</button>
+    <button data-view="storage" data-online>空间与清理</button>
+    <button data-view="history">历史版本</button>
+    <span class="nav-gap"></span>
+    <button id="change-password" class="nav-sub" hidden>修改密码</button>
+    <button id="logout" class="nav-sub" hidden>退出登录</button>
+  </nav>
+  <main>
+    <section class="view" data-view="works">
+      <div class="cols">
+        <div>
+    <section class="panel tree">
+      <h2>分类与作品组</h2>
+      <p class="sub">分类可以有子分类；作品组放在分类里，就会出现在对应的列表页。顺序就是网站上的显示顺序，编号自动生成。</p>
+      <div class="toolbar"><button id="add-top">+ 新建一级分类</button><button id="expand-all">全部展开</button><button id="collapse-all">全部收起</button></div>
+      <ul id="tree"></ul>
+    </section>
+        </div>
+        <aside>
+    <section class="panel">
+      <h2>首页精选</h2>
+      <p class="sub">首页精选作品的顺序。每组显示它的第一条视频的封面和预览；没有设置精选时，首页显示最新的几组。改完点「保存」。</p>
+      <div id="featured" class="list"></div>
+      <div style="display:flex; gap:6px; margin-top:8px"><select id="featured-add" style="flex:1"></select><button id="featured-add-btn">加入</button></div>
+    </section>
+    <section class="panel">
+      <h2>未放入分类的作品组</h2>
+      <p class="sub">从分类里移出的作品组会放在这里，不会显示在网站上，随时可以再放回去。</p>
+      <div id="pool" class="list"></div>
+    </section>
+        </aside>
+      </div>
+    </section>
+    <section class="view" data-view="upload" hidden>
+      <div class="cols even">
+    <section class="panel" id="upload-panel" hidden>
+      <h2>上传新作品</h2>
+      <p class="sub">选好视频（可以多选，按文件名排序），填名称、选分类后上传。上传完会自动生成预览、流畅版和封面，几分钟后作品出现在网站上；处理期间在分类里显示「转码中」。</p>
+      <div class="form">
+        <label>名称</label><input id="u-name" placeholder="例如：秋冬系列 · 片场">
+        <label>英文名</label><input id="u-en" placeholder="可选，外语页面使用">
+        <label>年份</label><input id="u-year">
+        <label>放入分类</label><select id="u-cat"></select>
+        <label>视频</label><input id="u-files" type="file" accept="video/mp4,video/quicktime,.mp4,.mov,.m4v" multiple>
+        <label>转码完成后</label><label style="color:inherit"><input id="u-publish" type="checkbox" style="width:auto"> 直接公开（不勾选就先隐藏，预览满意后再点「发布」）</label>
+      </div>
+      <div style="display:flex; gap:8px; margin-top:10px"><button id="u-start" class="primary">上传</button></div>
+      <div id="u-progress"></div>
+    </section>
+    <section class="panel" id="batch-panel" hidden>
+      <h2>批量上传（按文件夹）</h2>
+      <p class="sub">选一个总文件夹：里面每个子文件夹会变成一个作品组，组名默认用文件夹名；直接放在总文件夹里的视频合成一组。上传前可以逐组改名、选分类或取消勾选。手机浏览器一般不支持选文件夹，请在电脑上用。</p>
+      <div class="form">
+        <label>文件夹</label><input id="b-folder" type="file" webkitdirectory multiple>
+        <label>年份</label><input id="b-year">
+        <label>统一分类</label><select id="b-cat"></select>
+        <label>转码完成后</label><label style="color:inherit"><input id="b-publish" type="checkbox" style="width:auto"> 直接公开（不勾选就先隐藏）</label>
+      </div>
+      <div id="b-list" class="list" style="margin-top:10px"></div>
+      <div style="display:flex; gap:8px; margin-top:10px"><button id="b-start" class="primary" disabled>全部上传</button></div>
+      <div id="b-progress"></div>
+    </section>
+    <section class="panel" id="register-panel">
+      <h2>新增作品组</h2>
+      <p class="sub">视频需要先按现有规则处理并上传到 R2（封面 / 预览 / 流畅 / 原画）。这里登记文件位置，并检查每个版本是否已就位。</p>
+      <div class="form" id="new-form">
+        <label>类型</label>
+        <div class="seg"><button data-kind="archive" class="on">按编号 clip-01…</button><button data-kind="social">按文件名</button></div>
+        <label>名称</label><input id="n-name" placeholder="例如：秋冬系列 · 片场">
+        <label>年份</label><input id="n-year" value="2026">
+        <label>英文名</label><input id="n-en" placeholder="可选，外语页面使用">
+        <label class="k-archive">媒体文件夹</label><input class="k-archive" id="n-base" placeholder="例如 brand/aw26-campaign">
+        <label class="k-archive">视频数量</label><input class="k-archive" id="n-count" type="number" min="1" value="1">
+        <label class="k-archive">封面文件夹</label><input class="k-archive" id="n-poster" placeholder="默认 /posters/媒体文件夹">
+        <label class="k-social" hidden>文件夹名</label><input class="k-social" hidden id="n-media" placeholder="social/originals/ 下的文件夹，例如 aw26-douyin">
+        <label class="k-social" hidden>文件名</label><input class="k-social" hidden id="n-files" placeholder="不带 .mp4，用逗号分隔，例如 01, 02, 03">
+        <label class="k-social" hidden>平台</label><select class="k-social" hidden id="n-platform"><option value="抖音">抖音</option><option value="视频号">视频号</option><option value="">不标注</option></select>
+        <label>编号</label><input id="n-id" placeholder="网址名，自动生成，可修改">
+      </div>
+      <div style="display:flex; gap:8px; margin-top:10px"><button id="n-check">检查媒体</button><button id="n-add" class="primary">放入作品池</button></div>
+      <div id="n-result"></div>
+      <details class="help"><summary>文件放在哪里？</summary>
+        <p>按编号：原画 <code>媒体文件夹/clip-01.mp4</code>，预览 <code>previews/媒体文件夹/clip-01.mp4</code>，流畅 <code>streams-balanced/媒体文件夹/clip-01.mp4</code>，封面放在项目 <code>public/posters/…/clip-01.jpg</code>。</p>
+        <p>按文件名：原画 <code>social/originals/文件夹/名.mp4</code>，预览 <code>social/previews/文件夹/名.mp4</code>，流畅 <code>streams-balanced/social/文件夹/名.mp4</code>，封面 <code>public/posters/social/文件夹/名.jpg</code>。</p>
+      </details>
+    </section>
+      </div>
+    </section>
+    <section class="view" data-view="site" hidden><div class="panel-wrap" id="view-site"></div></section>
+    <section class="view" data-view="about" hidden><div class="panel-wrap" id="view-about"></div></section>
+    <section class="view" data-view="stats" hidden><div class="panel-wrap" id="view-stats"></div></section>
+    <section class="view" data-view="storage" hidden>
+    <section class="panel" id="storage-panel">
+      <h2>空间用量与清理</h2>
+      <p class="sub">查看 R2 里各文件夹占了多少空间，并清理确定没被网站用到的文件。删除不能恢复，每一类都需要你确认。</p>
+      <button id="storage-open">重新统计</button>
+      <div id="storage-box"></div>
+    </section>
+    </section>
+    <section class="view" data-view="history" hidden>
+    <section class="panel">
+      <h2>历史版本</h2>
+      <p class="sub">每次保存前都会自动备份。恢复后网站立即回到那个版本（恢复前的状态也会先备份）。</p>
+      <div id="backups" class="list"></div>
+    </section>
+    </section>
+  </main>
+</div>
+<script>
+const $ = (selector) => document.querySelector(selector);
+const el = (tag, attrs = {}, ...children) => {
+  const node = document.createElement(tag);
+  for (const [key, value] of Object.entries(attrs)) {
+    if (key === "class") node.className = value;
+    else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
+    else if (value === true) node.setAttribute(key, "");
+    else if (value !== false && value != null) node.setAttribute(key, value);
+  }
+  for (const child of children.flat()) if (child != null) node.append(child instanceof Node ? child : document.createTextNode(child));
+  return node;
+};
+const LOCALES = [["en", "English"]];
+// 同一个页面两种用法：本机预览时的 /__works（直接改 content/works.json），以及线上的 /admin（数据存在 R2，可上传视频）
+const ONLINE = !location.pathname.startsWith("/__works");
+const API = ONLINE
+  ? { data: "/api/admin/works", save: "/api/admin/works", check: "/api/admin/check", backups: "/api/admin/backups", restore: "/api/admin/restore" }
+  : { data: "/__works/data", save: "/__works/save", check: "/__works/check", backups: "/__works/backups", restore: "/__works/restore" };
+// 未登录时弹出登录框（默认邮箱验证码，密码备用），登录成功后重新执行原来的请求
+const getJson = async (url, options) => {
+  let response = await fetch(url, options);
+  // 登录后重试；如果登录成功了还是被拒绝，多半是浏览器没有保存登录状态（禁用了 Cookie 等），再弹一次登录框并说明
+  for (let attempt = 0; response.status === 401 && ONLINE && attempt < 2; attempt += 1) {
+    const info = await response.clone().json().catch(() => ({}));
+    await askLogin({ ...info, retry: attempt > 0 });
+    response = await fetch(url, { ...options, credentials: "same-origin" });
+  }
+  return response;
+};
+let loginPromise = null;
+function askLogin(info = {}) {
+  loginPromise ??= new Promise((resolve) => {
+    let mode = info.login === "email" ? "email" : "password";
+    const post = (url, body) => fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const done = () => { overlay.remove(); loginPromise = null; resolve(); };
+    const input = el("input", { style: "width:100%; padding:10px 12px; font-size:16px" });
+    const msg = el("div", { class: "meta", style: "min-height:18px; margin-top:8px" });
+    const title = el("h2", { style: "margin:0 0 6px; font-size:18px" }, "登录作品后台");
+    const sub = el("p", { class: "sub", style: "margin:0 0 14px; color:var(--muted); font-size:13px" });
+    const warn = info.retry ? el("div", { class: "msg err", style: "margin:0 0 12px" }, "刚才登录成功了，但这个浏览器没有保存登录状态。请检查浏览器是否禁止了网站保存数据（Cookie），或者换 Safari / Chrome 再试。") : null;
+    const sendButton = el("button", { type: "button", style: "width:100%; margin-bottom:10px; padding:10px" }, "发送验证码");
+    const submitButton = el("button", { class: "primary", type: "submit", style: "width:100%; margin-top:10px; padding:10px" }, "登录");
+    const switchLink = el("button", { type: "button", class: "icon", style: "margin-top:12px; width:100%; border:0; background:none; color:var(--muted); font-size:13px" });
+    let wait = 0, timer = null;
+    const tick = () => {
+      sendButton.disabled = wait > 0;
+      sendButton.textContent = wait > 0 ? `${wait} 秒后可重新发送` : "发送验证码";
+      if (wait-- <= 0) { clearInterval(timer); timer = null; }
+    };
+    const send = async () => {
+      msg.textContent = "发送中…";
+      const response = await post("/api/admin/email-code", { send: true });
+      const result = await response.json().catch(() => ({}));
+      if (response.ok) { msg.textContent = `验证码已发到 ${info.email ?? "你的邮箱"}，10 分钟内有效。没收到请看看垃圾邮件。`; wait = 60; tick(); timer ??= setInterval(tick, 1000); input.focus(); }
+      else msg.textContent = result.errors?.[0] ?? "发送失败，请稍后再试。";
+    };
+    const render = () => {
+      const email = mode === "email";
+      Object.assign(input, email
+        ? { type: "text", inputMode: "numeric", autocomplete: "one-time-code", placeholder: "6 位验证码", maxLength: 6 }
+        : { type: "password", inputMode: "text", autocomplete: "current-password", placeholder: "后台密码", maxLength: 200 });
+      input.value = ""; msg.textContent = "";
+      sub.textContent = email ? `验证码会发到 ${info.email ?? "管理员邮箱"}。` : "输入你设置的后台密码。";
+      sendButton.hidden = !email;
+      switchLink.textContent = email ? "改用密码登录" : "改用邮箱验证码登录";
+      switchLink.hidden = info.login !== "email";
+    };
+    switchLink.addEventListener("click", () => { mode = mode === "email" ? "password" : "email"; render(); });
+    sendButton.addEventListener("click", send);
+    const submit = async () => {
+      if (!input.value.trim()) return;
+      msg.textContent = "登录中…";
+      const response = mode === "email" ? await post("/api/admin/email-code", { code: input.value.trim() }) : await post("/api/admin/login", { password: input.value });
+      if (response.ok) return done();
+      msg.textContent = mode === "email" ? "验证码不对或已过期，可以重新发送。" : "密码不对，请再试一次。";
+      input.select();
+    };
+    const overlay = el("div", { style: "position:fixed; inset:0; z-index:50; display:flex; align-items:center; justify-content:center; background:rgba(241,238,234,.96); padding:24px" },
+      el("form", { style: "width:100%; max-width:360px; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:24px", onsubmit: (event) => { event.preventDefault(); submit(); } },
+        title, warn, sub, sendButton, input, msg, submitButton, switchLink));
+    render();
+    document.body.append(overlay);
+    (mode === "email" ? sendButton : input).focus();
+  });
+  return loginPromise;
+}
+
+// 修改密码：只在线上后台显示。新密码只发给网站，不会显示或保存在别处
+function changePassword() {
+  const field = (placeholder, autocomplete) => el("input", { type: "password", placeholder, autocomplete, style: "width:100%; padding:10px 12px; font-size:16px; margin-bottom:8px" });
+  const current = field("当前密码", "current-password");
+  const next = field("新密码（至少 8 位）", "new-password");
+  const again = field("再输入一次新密码", "new-password");
+  const msg = el("div", { class: "meta", style: "min-height:18px" });
+  const close = () => overlay.remove();
+  const submit = async () => {
+    if (next.value.length < 8) return (msg.textContent = "新密码至少 8 位。");
+    if (next.value !== again.value) return (msg.textContent = "两次输入的新密码不一样。");
+    msg.textContent = "保存中…";
+    const response = await fetch("/api/admin/password", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ current: current.value, next: next.value }) });
+    const result = await response.json().catch(() => ({}));
+    if (response.ok) { msg.textContent = "已修改。其他设备需要用新密码重新登录。"; setTimeout(close, 1800); }
+    else msg.textContent = result.errors?.[0] ?? "修改失败，请稍后再试。";
+  };
+  const overlay = el("div", { style: "position:fixed; inset:0; z-index:50; display:flex; align-items:center; justify-content:center; background:rgba(241,238,234,.96); padding:24px" },
+    el("form", { style: "width:100%; max-width:360px; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:24px", onsubmit: (event) => { event.preventDefault(); submit(); } },
+      el("h2", { style: "margin:0 0 14px; font-size:18px" }, "修改后台密码"),
+      current, next, again, msg,
+      el("div", { style: "display:flex; gap:8px; margin-top:10px" },
+        el("button", { type: "button", style: "flex:1; padding:10px", onclick: close }, "取消"),
+        el("button", { class: "primary", type: "submit", style: "flex:1; padding:10px" }, "保存新密码"))));
+  document.body.append(overlay);
+  current.focus();
+}
+if (ONLINE) {
+  $("#change-password").hidden = false;
+  $("#logout").hidden = false;
+  $("#change-password").addEventListener("click", changePassword);
+  $("#logout").addEventListener("click", async () => {
+    await fetch("/api/admin/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ logout: true }) });
+    location.reload();
+  });
+}
+
+let config, builtin, clips = {}, saved = "", version = "";
+const open = new Set();        // 展开的分类（对象引用）
+const detail = new Set();      // 展开详情的条目
+let dragging = null;
+
+const isDirty = () => JSON.stringify(config) !== saved;
+const refreshDirty = () => {
+  const dirty = isDirty();
+  $("#save").disabled = !dirty;
+  $("#dirty").textContent = dirty ? "有未保存的修改" : "";
+};
+const changed = () => { refreshDirty(); };
+const rerender = () => { renderTree(); renderFeatured(); renderPool(); refreshDirty(); };
+
+// ---------- 作品组信息 ----------
+const groupInfo = (id) => {
+  const def = config.groups[id];
+  const base = builtin[id];
+  if (!def || def.kind === "builtin") {
+    if (!base) return { name: `（找不到：${id}）`, year: "", count: 0, poster: "", custom: false };
+    return { name: def?.name ?? base.name, year: def?.year ?? base.year, count: base.count, poster: base.poster, custom: false };
+  }
+  if (def.kind === "archive") return { name: def.name, year: def.year, count: Number(def.count), poster: def.status === "processing" ? "" : `${def.posterBase || `/posters/${def.mediaBase}`}/clip-01.jpg`, custom: true, uploaded: String(def.posterBase || "").startsWith("/media/"), status: def.error ? "failed" : def.status, error: def.error };
+  return { name: def.name, year: def.year ?? "2026", count: def.files.length, poster: `/posters/social/${def.mediaId || id}/${def.files[0]}.jpg`, custom: true };
+};
+const defOf = (id) => {
+  if (!config.groups[id]) config.groups[id] = { kind: "builtin" };
+  return config.groups[id];
+};
+const cleanDef = (id) => {
+  const def = config.groups[id];
+  if (!def) return;
+  for (const key of ["details", "detailsEn", "covers", "homeTitle"]) if (def[key] && !Object.values(def[key]).some(Boolean)) delete def[key];
+  if (def.kind !== "builtin") return;
+  if (def.names && !Object.values(def.names).some(Boolean)) delete def.names;
+  if (Object.keys(def).length === 1) delete config.groups[id];
+};
+
+// ---------- 树操作 ----------
+const allGroupIds = () => [...new Set([...Object.keys(builtin), ...Object.keys(config.groups)])];
+const usedGroups = () => {
+  const used = [];
+  const walk = (entries) => entries.forEach((entry) => entry.group ? used.push(entry.group) : walk(entry.children ?? []));
+  walk(config.tree.children);
+  return used;
+};
+const findParent = (target, list = config.tree.children) => {
+  const index = list.indexOf(target);
+  if (index >= 0) return { list, index };
+  for (const entry of list) {
+    if (entry.children) { const found = findParent(target, entry.children); if (found) return found; }
+  }
+  return null;
+};
+const contains = (ancestor, target) => ancestor === target || (ancestor.children ?? []).some((child) => contains(child, target));
+const categories = () => {
+  const out = [];
+  const walk = (entries, path) => entries.forEach((entry) => {
+    if (entry.group) return;
+    const label = [...path, entry.name];
+    out.push({ entry, label: label.join(" / ") });
+    walk(entry.children ?? [], label);
+  });
+  walk(config.tree.children, []);
+  return out;
+};
+const slugify = (text) => text.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+const uniqueSlug = (base, list) => {
+  const taken = new Set(list.map((entry) => entry.slug ?? entry.group));
+  let slug = base || "new"; let n = 2;
+  while (taken.has(slug)) slug = `${base || "new"}-${n++}`;
+  return slug;
+};
+const remove = (entry) => { const found = findParent(entry); if (found) found.list.splice(found.index, 1); };
+const move = (entry, delta) => {
+  const found = findParent(entry); if (!found) return;
+  const next = found.index + delta; if (next < 0 || next >= found.list.length) return;
+  found.list.splice(found.index, 1); found.list.splice(next, 0, entry); rerender();
+};
+const addCategory = (list) => {
+  const entry = { slug: uniqueSlug("new-category", list), name: "新分类", children: [] };
+  list.push(entry); detail.add(entry); rerender();
+};
+
+// ---------- 拖拽 ----------
+const dropMode = (event, row, entry) => {
+  const rect = row.getBoundingClientRect();
+  const y = (event.clientY - rect.top) / rect.height;
+  if (!entry.group && y > .28 && y < .72) return "inside";
+  return y < .5 ? "before" : "after";
+};
+const clearDrop = () => document.querySelectorAll(".drop-before,.drop-after,.drop-inside").forEach((node) => node.classList.remove("drop-before", "drop-after", "drop-inside"));
+const attachDrag = (row, entry) => {
+  row.draggable = true;
+  row.addEventListener("dragstart", (event) => { dragging = entry; row.classList.add("dragging"); event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", "x"); });
+  row.addEventListener("dragend", () => { dragging = null; row.classList.remove("dragging"); clearDrop(); });
+  row.addEventListener("dragover", (event) => {
+    if (!dragging || contains(dragging, entry)) return;
+    event.preventDefault(); clearDrop(); row.classList.add(`drop-${dropMode(event, row, entry)}`);
+  });
+  row.addEventListener("dragleave", () => row.classList.remove("drop-before", "drop-after", "drop-inside"));
+  row.addEventListener("drop", (event) => {
+    event.preventDefault();
+    if (!dragging || contains(dragging, entry)) return;
+    const mode = dropMode(event, row, entry);
+    const source = dragging;
+    if (typeof source === "string") { /* 来自作品池的作品组 */ }
+    else remove(source);
+    const item = typeof source === "string" ? { group: source } : source;
+    if (mode === "inside") { (entry.children ??= []).push(item); open.add(entry); }
+    else { const found = findParent(entry); found.list.splice(found.index + (mode === "after" ? 1 : 0), 0, item); }
+    clearDrop(); rerender();
+  });
+};
+
+// ---------- 渲染：分类树 ----------
+// getOwner(false) 只读取；getOwner(true) 在需要写入时才创建对象，避免只是展开详情就算作修改
+const namesEditor = (getOwner, onChange) => el("div", { class: "names" }, LOCALES.map(([code, label]) => el("input", {
+  value: getOwner(false)?.names?.[code] ?? "", placeholder: label,
+  oninput: (event) => {
+    const owner = getOwner(true);
+    const v = event.target.value.trim();
+    owner.names ??= {};
+    if (v) owner.names[code] = v; else delete owner.names[code];
+    if (!Object.keys(owner.names).length) delete owner.names;
+    onChange();
+  },
+})));
+
+const renderCategory = (entry) => {
+  const expanded = open.has(entry);
+  const childCount = (entry.children ?? []).length;
+  const row = el("div", { class: "row cat" },
+    el("span", { class: "grip", title: "拖动排序 / 移动" }, "⋮⋮"),
+    el("button", { class: "toggle", onclick: () => { expanded ? open.delete(entry) : open.add(entry); renderTree(); } }, childCount ? (expanded ? "▾" : "▸") : "·"),
+    el("input", { class: "name", value: entry.name, oninput: (event) => { entry.name = event.target.value; changed(); } }),
+    el("span", { class: "meta" }, `/${entry.slug} · ${childCount} 项`),
+    el("span", { class: "actions" },
+      el("button", { class: "icon", title: "上移", onclick: () => move(entry, -1) }, "↑"),
+      el("button", { class: "icon", title: "下移", onclick: () => move(entry, 1) }, "↓"),
+      el("button", { class: "link", onclick: () => { detail.has(entry) ? detail.delete(entry) : detail.add(entry); renderTree(); } }, "详情"),
+      el("button", { class: "link", onclick: () => { entry.children ??= []; open.add(entry); addCategory(entry.children); } }, "+子分类"),
+      el("button", { class: "link danger", onclick: () => {
+        const groups = []; const walk = (e) => e.group ? groups.push(e.group) : (e.children ?? []).forEach(walk); walk(entry);
+        if (!confirm(`删除分类「${entry.name}」？${groups.length ? `里面的 ${groups.length} 个作品组会移到「未放入分类」，不会丢失。` : ""}`)) return;
+        remove(entry); config.featured = config.featured.filter((id) => !groups.includes(id)); rerender();
+      } }, "删除"),
+    ),
+  );
+  attachDrag(row, entry);
+  const li = el("li", {}, row);
+  if (detail.has(entry)) {
+    li.append(el("div", { class: "details" },
+      el("label", {}, "网址名"), el("input", { value: entry.slug, oninput: (event) => { entry.slug = event.target.value.trim(); changed(); } }),
+      el("label", {}, "说明"), el("textarea", { oninput: (event) => { entry.note = event.target.value || undefined; changed(); } }, entry.note ?? ""),
+      el("label", {}, "空分类提示"), el("textarea", { placeholder: "没有作品时显示", oninput: (event) => { entry.empty = event.target.value || undefined; changed(); } }, entry.empty ?? ""),
+      el("label", {}, "外语名称"), namesEditor(() => entry, changed),
+    ));
+  }
+  if (expanded) {
+    const ul = el("ul");
+    (entry.children ?? []).forEach((child) => ul.append(child.group ? renderGroup(child) : renderCategory(child)));
+    if (!childCount) ul.append(el("li", { class: "empty-note" }, "空分类：把作品组拖到这个分类名称上即可放入。"));
+    li.append(ul);
+  }
+  return li;
+};
+
+const groupDetails = (id) => {
+  const def = config.groups[id];
+  const info = groupInfo(id);
+  const box = el("div", { class: "details" });
+  box.append(
+    el("label", {}, "编号"), el("span", {}, id + (info.custom ? "（新增）" : "（原有作品，媒体地址不可改）")),
+    el("label", {}, "年份"), el("input", { value: info.year, oninput: (event) => { defOf(id).year = event.target.value; cleanDefLater(id); } }),
+    el("label", {}, "外语名称"), namesEditor((create) => (create ? defOf(id) : config.groups[id]), () => cleanDefLater(id)),
+    ...detailsEditor(id),
+  );
+  if (ONLINE && config.groups[id]?.hidden) box.append(...publishTools(id));
+  const clipBox = clipsEditor(id, info);
+  if (clipBox) box.append(el("label", {}, "组内视频"), clipBox);
+  if (ONLINE && info.uploaded && info.status !== "ready") {
+    box.append(el("div", { class: "full" }, el("button", { onclick: async () => {
+      const response = await getJson("/api/admin/process", { method: "POST", body: JSON.stringify({ groupId: id, retry: true, sources: [] }) });
+      const result = await response.json();
+      showMsg($("#save-msg"), response.ok && !result.warning ? "ok" : "err", response.ok ? (result.warning || "已重新开始转码，几分钟后刷新看看。") : "重新转码失败：", result.errors);
+    } }, "重新转码")));
+  }
+  if (def?.kind === "archive" || def?.kind === "social") {
+    box.append(el("label", {}, "视频"), el("span", {}, def.kind === "archive" ? `${def.mediaBase}/clip-01…${String(def.count).padStart(2, "0")}` : `social/…/${def.mediaId || id}/ ${def.files.join(", ")}`));
+    const result = el("div", { class: "full" });
+    box.append(el("div", { class: "full" }, el("button", { onclick: () => checkMedia(id, def, result) }, "检查媒体是否就位")), result);
+  }
+  return box;
+};
+// 项目说明：中文必填项都可以留空（不编造），英文用于外语页面
+const DETAIL_FIELDS = [["background", "项目背景", "textarea", "例如：品牌 2026 春夏系列上新，拍摄线下门店与街拍"], ["role", "我的职责", "input", "例如：拍摄、剪辑、调色"], ["client", "客户 / 合作", "input", "例如：品牌名称，或「个人创作」"]];
+const detailsEditor = (id) => {
+  const fields = (key, lang) => DETAIL_FIELDS.flatMap(([field, label, tag, hint]) => [
+    el("label", {}, lang ? `${label}（英文）` : label),
+    el(tag, { value: config.groups[id]?.[key]?.[field] ?? "", placeholder: lang ? "Optional" : hint, oninput: (event) => {
+      const def = defOf(id);
+      def[key] ??= {};
+      const v = event.target.value.trim();
+      if (v) def[key][field] = event.target.value; else delete def[key][field];
+      cleanDefLater(id);
+    } }, tag === "textarea" ? (config.groups[id]?.[key]?.[field] ?? "") : undefined),
+  ]);
+  const en = el("details", { class: "full help" }, el("summary", {}, "英文说明（外语页面使用，可不填）"), el("div", { class: "details", style: "margin:8px 0 0; border:0; padding:0" }, ...fields("detailsEn", "en")));
+  return [el("div", { class: "full", style: "margin-top:6px; font-weight:500" }, "项目说明（显示在作品详情页）"), ...fields("details"), en];
+};
+
+// ---------- 隐藏作品：私密预览链接、定时发布 ----------
+const toLocalInput = (iso) => { if (!iso) return ""; const d = new Date(iso); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16); };
+const publishTools = (id) => {
+  const def = config.groups[id];
+  const linkBox = el("div", { class: "full" });
+  const days = el("select", {}, [7, 30, 90].map((n) => el("option", { value: n, selected: n === 30 }, `${n} 天有效`)));
+  const schedule = el("input", { type: "datetime-local", value: toLocalInput(def.publishAt), onchange: (event) => {
+    const value = event.target.value;
+    if (value) defOf(id).publishAt = new Date(value).toISOString(); else delete defOf(id).publishAt;
+    rerender();
+  } });
+  return [
+    el("label", {}, "私密预览"),
+    el("div", { style: "display:flex; gap:8px; flex-wrap:wrap; align-items:center" }, days, el("button", { onclick: async () => {
+      const response = await getJson("/api/admin/preview-link", { method: "POST", body: JSON.stringify({ groupId: id, days: Number(days.value) }) });
+      const result = await response.json();
+      if (!response.ok) return showMsg(linkBox, "err", "生成失败：", result.errors);
+      const input = el("input", { value: result.url, readonly: true, style: "width:100%; font-size:12px" });
+      linkBox.replaceChildren(el("div", { style: "display:flex; gap:6px; margin-top:4px" }, input, el("button", { style: "white-space:nowrap", onclick: async () => { input.select(); try { await navigator.clipboard.writeText(result.url); } catch { document.execCommand("copy"); } } }, "复制")),
+        el("div", { class: "meta", style: "color:var(--muted); font-size:12px; margin-top:4px" }, `拿到链接的人不用登录就能看这组作品，${result.days} 天后自动失效。作品需要放在某个分类里才能预览。`));
+    } }, "生成链接")),
+    linkBox,
+    el("label", {}, "定时发布"),
+    el("div", { style: "display:flex; gap:8px; align-items:center; flex-wrap:wrap" }, schedule,
+      def.publishAt ? el("button", { class: "link danger", onclick: () => { delete defOf(id).publishAt; rerender(); } }, "取消定时") : null,
+      el("span", { class: "meta", style: "color:var(--muted); font-size:12px" }, "到时间自动出现在网站上（约 1 分钟内）。改完点「保存」。")),
+  ];
+};
+
+// ---------- 组内视频：排序、隐藏、预览、换封面、追加 ----------
+const clipsOf = (id) => clips[id] ?? [];
+const orderOf = (id) => config.groups[id]?.order ?? clipsOf(id).map((clip) => clip.n);
+const shownCount = (id) => (clipsOf(id).length ? orderOf(id).filter((n) => clipsOf(id).some((clip) => clip.n === n)).length : groupInfo(id).count);
+const coverOf = (id, clip) => config.groups[id]?.covers?.[clip.n]?.src ?? clip.poster;
+const setOrder = (id, next) => {
+  const def = defOf(id);
+  const all = clipsOf(id).map((clip) => clip.n);
+  if (next.length === all.length && next.every((n, index) => n === all[index])) delete def.order; else def.order = next;
+  cleanDef(id); renderTree(); refreshDirty();
+};
+const clipsEditor = (id, info) => {
+  const list = clipsOf(id);
+  if (!list.length) return null;
+  const order = orderOf(id);
+  const shown = order.map((n) => list.find((clip) => clip.n === n)).filter(Boolean);
+  const off = list.filter((clip) => !order.includes(clip.n));
+  const card = (clip, position) => el("div", { class: "clip" + (position ? "" : " off") },
+    el("img", { src: coverOf(id, clip), alt: "", loading: "lazy", title: "点击预览", onclick: () => previewClip(clip, `${info.name} · ${clip.label}`) }),
+    el("span", { class: "no" }, position ? String(position).padStart(2, "0") : "隐藏"),
+    el("div", { class: "ops" },
+      position ? [
+        el("button", { title: "往前", disabled: position === 1, onclick: () => { const next = [...order]; const i = position - 1; [next[i - 1], next[i]] = [next[i], next[i - 1]]; setOrder(id, next); } }, "←"),
+        el("button", { title: "往后", disabled: position === shown.length, onclick: () => { const next = [...order]; const i = position - 1; [next[i + 1], next[i]] = [next[i], next[i + 1]]; setOrder(id, next); } }, "→"),
+        el("button", { title: "从网站上隐藏这一条", onclick: () => { if (shown.length === 1) return alert("至少要保留一条视频。想整组不显示，请用「隐藏」整个作品组。"); setOrder(id, order.filter((n) => n !== clip.n)); } }, "隐藏"),
+      ] : el("button", { onclick: () => setOrder(id, [...order, clip.n]) }, "恢复显示"),
+      ONLINE ? el("button", { title: "换封面", onclick: () => editCover(id, clip) }, "封面") : null,
+    ));
+  const box = el("div", {},
+    el("div", { class: "clips" }, ...shown.map((clip, index) => card(clip, index + 1)), ...off.map((clip) => card(clip, 0))),
+    el("div", { class: "meta", style: "margin-top:6px; color:var(--muted); font-size:12px" }, "点图片预览；←→ 调整顺序；隐藏的条目不会显示在网站上，文件保留，可以随时恢复。改完点「保存」。"));
+  const def = config.groups[id];
+  if (ONLINE && info.uploaded && info.status === "ready") {
+    const input = el("input", { type: "file", accept: "video/mp4,video/quicktime,.mp4,.mov,.m4v", multiple: true });
+    const msg = el("div");
+    const button = el("button", { onclick: () => appendClips(id, input, button, msg) }, "追加视频");
+    box.append(el("div", { style: "display:flex; gap:8px; align-items:center; margin-top:10px; flex-wrap:wrap" }, input, button), msg);
+    if (def?.appending) button.disabled = true;
+  }
+  return box;
+};
+const modal = (...children) => {
+  const close = () => { overlay.remove(); document.removeEventListener("keydown", onKey); };
+  const onKey = (event) => { if (event.key === "Escape") close(); };
+  const overlay = el("div", { class: "modal", onclick: (event) => { if (event.target === overlay) close(); } }, el("div", {}, ...children));
+  document.addEventListener("keydown", onKey);
+  document.body.append(overlay);
+  return close;
+};
+// 在页面里显示（target 是某个页面区域）或者弹窗显示；返回关闭函数（页面里显示时什么都不做）
+const present = (target, title, actions, ...content) => {
+  if (target) {
+    target.replaceChildren(el("div", { class: "card-head" }, el("h2", {}, title), ...actions), ...content);
+    return () => {};
+  }
+  let close;
+  close = modal(el("div", { style: "display:flex; align-items:center; margin-bottom:12px; gap:8px" }, el("strong", { style: "flex:1; font-size:16px" }, title), ...actions, el("button", { onclick: () => close() }, "关闭")), ...content);
+  return close;
+};
+const previewClip = (clip, title) => {
+  const video = el("video", { src: clip.stream, controls: true, autoplay: true, playsInline: true, poster: clip.poster });
+  let close;
+  close = modal(el("div", { style: "display:flex; align-items:center; margin-bottom:10px" }, el("strong", { style: "flex:1" }, title), el("button", { onclick: () => close() }, "关闭")), video,
+    el("div", { class: "meta", style: "margin-top:8px; color:var(--muted); font-size:12px" }, "这里播放的是流畅版；网站上的预览版和原画也来自同一条视频。"));
+};
+const toJpeg = (source, width, height) => {
+  const scale = Math.min(1, 1080 / Math.max(width, height));
+  const canvas = el("canvas");
+  canvas.width = Math.round(width * scale); canvas.height = Math.round(height * scale);
+  canvas.getContext("2d").drawImage(source, 0, 0, canvas.width, canvas.height);
+  return new Promise((resolve) => canvas.toBlob((blob) => resolve({ blob, size: [canvas.width, canvas.height] }), "image/jpeg", 0.88));
+};
+const editCover = (id, clip) => {
+  const video = el("video", { src: `/api/admin/frame-source?src=${encodeURIComponent(clip.stream)}`, controls: true, muted: true, playsInline: true, preload: "auto" });
+  const msg = el("div");
+  const file = el("input", { type: "file", accept: "image/jpeg,image/png,image/webp" });
+  let close;
+  const save = async ({ blob, size }) => {
+    msg.replaceChildren(el("div", { class: "msg ok" }, "保存封面中…"));
+    const response = await getJson(`/api/admin/cover?groupId=${encodeURIComponent(id)}&clip=${clip.n}`, { method: "POST", headers: { "Content-Type": "image/jpeg" }, body: blob });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) return showMsg(msg, "err", "保存失败：", result.errors);
+    const def = defOf(id);
+    def.covers ??= {};
+    def.covers[clip.n] = { src: result.src, size };
+    close(); rerender();
+    showMsg($("#save-msg"), "ok", "封面已换好，点右上角「保存」后网站生效。");
+  };
+  file.addEventListener("change", async () => {
+    const picked = file.files[0];
+    if (!picked) return;
+    const bitmap = await createImageBitmap(picked).catch(() => null);
+    if (!bitmap) return showMsg(msg, "err", "这张图片打不开，换一张 JPG 或 PNG 试试。");
+    save(await toJpeg(bitmap, bitmap.width, bitmap.height));
+  });
+  const custom = config.groups[id]?.covers?.[clip.n];
+  close = modal(
+    el("div", { style: "display:flex; align-items:center; margin-bottom:10px" }, el("strong", { style: "flex:1" }, `更换封面 · ${clip.label}`), el("button", { onclick: () => close() }, "关闭")),
+    video,
+    el("p", { class: "sub", style: "color:var(--muted); font-size:12.5px" }, "拖动进度条找到想要的画面，暂停后点「用这一帧」；也可以直接上传一张图片。"),
+    el("div", { style: "display:flex; gap:8px; flex-wrap:wrap; align-items:center" },
+      el("button", { class: "primary", onclick: async () => {
+        if (!video.videoWidth) return showMsg(msg, "err", "视频还没载入好，稍等一下再点。");
+        video.pause();
+        save(await toJpeg(video, video.videoWidth, video.videoHeight));
+      } }, "用这一帧"),
+      el("span", { class: "meta" }, "或上传图片："), file,
+      custom ? el("button", { class: "link danger", onclick: () => { delete config.groups[id].covers[clip.n]; cleanDef(id); close(); rerender(); } }, "恢复默认封面") : null),
+    msg);
+};
+async function appendClips(id, input, button, msg) {
+  const files = [...input.files].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+  if (!files.length) return showMsg(msg, "err", "请先选择视频。");
+  if (isDirty()) return showMsg(msg, "err", "你有未保存的修改，请先保存，再追加视频。");
+  const start = Number(config.groups[id].count) + 1;
+  if (start + files.length - 1 > 99) return showMsg(msg, "err", "一组最多 99 条。");
+  button.disabled = true;
+  window.onbeforeunload = () => "上传还没完成";
+  try {
+    const keys = [];
+    for (const [index, file] of files.entries()) {
+      keys.push(await uploadFile(file, id, start + index, (ratio) => showMsg(msg, "ok", `${file.name}：${Math.round(ratio * 100)}%`)));
+    }
+    const response = await getJson("/api/admin/process", { method: "POST", body: JSON.stringify({ groupId: id, append: true, sources: keys }) });
+    const result = await response.json();
+    if (!response.ok) throw new Error((result.errors || []).join("；"));
+    await load();
+    showMsg($("#save-msg"), result.warning ? "err" : "ok", result.warning || `已上传 ${files.length} 条，正在转码，完成后会自动加到这一组的最后。`);
+  } catch (error) {
+    showMsg(msg, "err", `追加中断：${error.message}`);
+    button.disabled = false;
+  } finally {
+    window.onbeforeunload = null;
+  }
+}
+
+let cleanTimer;
+const cleanDefLater = (id) => { clearTimeout(cleanTimer); cleanTimer = setTimeout(() => { cleanDef(id); refreshDirty(); }, 300); changed(); };
+
+const renderGroup = (entry) => {
+  const id = entry.group;
+  const info = groupInfo(id);
+  const featured = config.featured.includes(id);
+  const row = el("div", { class: "row" },
+    el("span", { class: "grip", title: "拖动排序 / 移动" }, "⋮⋮"),
+    el("img", { class: "thumb", src: info.poster, alt: "", loading: "lazy" }),
+    el("input", { class: "name", value: info.name, oninput: (event) => { defOf(id).name = event.target.value; changed(); } }),
+    el("span", { class: "meta" + (info.status === "failed" ? " s-bad" : "") }, info.status === "failed" ? `转码失败：${info.error}` : info.status === "processing" ? `${info.count} 条 · 转码中，网站上暂不显示` : `${shownCount(id)} 条 · ${info.year}${featured ? " · ★精选" : ""}${config.groups[id]?.appending ? ` · 正在追加 ${config.groups[id].appending} 条` : ""}`),
+    config.groups[id]?.hidden ? el("span", { class: "tag", title: "网站上不显示" }, config.groups[id].publishAt ? (Date.parse(config.groups[id].publishAt) <= Date.now() ? "已到定时，公开中" : `定时 ${new Date(config.groups[id].publishAt).toLocaleString("zh-CN", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}`) : "已隐藏") : null,
+    el("span", { class: "actions" },
+      el("button", { class: "icon", title: "上移", onclick: () => move(entry, -1) }, "↑"),
+      el("button", { class: "icon", title: "下移", onclick: () => move(entry, 1) }, "↓"),
+      el("button", { class: "link", onclick: () => { detail.has(id) ? detail.delete(id) : detail.add(id); renderTree(); } }, "详情"),
+      el("button", { class: "link", onclick: () => { featured ? config.featured = config.featured.filter((x) => x !== id) : config.featured.push(id); rerender(); } }, featured ? "取消精选" : "设为精选"),
+      el("button", { class: "link", title: "隐藏后网站上不显示，随时可以再发布", onclick: () => { const def = defOf(id); if (def.hidden) { delete def.hidden; delete def.publishAt; } else def.hidden = true; cleanDef(id); rerender(); } }, config.groups[id]?.hidden ? "发布" : "隐藏"),
+      moveSelect(entry),
+      el("button", { class: "link danger", onclick: () => { remove(entry); config.featured = config.featured.filter((x) => x !== id); rerender(); } }, "移出"),
+    ),
+  );
+  attachDrag(row, entry);
+  const li = el("li", {}, row);
+  if (detail.has(id)) li.append(groupDetails(id));
+  return li;
+};
+
+// 「移到…」：不用拖动也能把作品组换到别的分类（手机上主要靠它）
+const moveSelect = (entry) => {
+  const cats = categories();
+  const select = el("select", { style: "max-width:140px; font-size:12px" }, el("option", { value: "" }, "移到…"), cats.map((cat, index) => el("option", { value: index }, cat.label)));
+  select.addEventListener("change", () => {
+    const cat = cats[Number(select.value)];
+    if (!cat) return;
+    remove(entry); (cat.entry.children ??= []).push(entry); open.add(cat.entry); rerender();
+  });
+  return select;
+};
+
+const renderTree = () => {
+  const ul = $("#tree"); ul.replaceChildren();
+  config.tree.children.forEach((entry) => ul.append(entry.group ? renderGroup(entry) : renderCategory(entry)));
+};
+
+// ---------- 渲染：精选 / 作品池 ----------
+const renderFeatured = () => {
+  const box = $("#featured"); box.replaceChildren();
+  config.featured.forEach((id, index) => {
+    const info = groupInfo(id);
+    box.append(el("div", { class: "row" },
+      el("span", { class: "meta" }, String(index + 1).padStart(2, "0")),
+      el("img", { class: "thumb", src: info.poster, alt: "" }),
+      el("span", { style: "flex:1; min-width:0" }, info.name),
+      el("span", { class: "actions" },
+        el("button", { class: "icon", onclick: () => { if (index > 0) { config.featured.splice(index - 1, 0, config.featured.splice(index, 1)[0]); rerender(); } } }, "↑"),
+        el("button", { class: "icon", onclick: () => { if (index < config.featured.length - 1) { config.featured.splice(index + 1, 0, config.featured.splice(index, 1)[0]); rerender(); } } }, "↓"),
+        el("button", { class: "icon danger", title: "取消精选", onclick: () => { config.featured.splice(index, 1); rerender(); } }, "×"),
+      ),
+    ));
+  });
+  const select = $("#featured-add"); select.replaceChildren(el("option", { value: "" }, "选择作品组…"));
+  usedGroups().filter((id) => !config.featured.includes(id)).forEach((id) => select.append(el("option", { value: id }, groupInfo(id).name)));
+};
+
+const renderPool = () => {
+  const used = new Set(usedGroups());
+  const pool = allGroupIds().filter((id) => !used.has(id) && (builtin[id] || config.groups[id]?.kind !== "builtin"));
+  const box = $("#pool"); box.replaceChildren();
+  if (!pool.length) box.append(el("div", { class: "empty-note", style: "padding-left:0" }, "全部作品组都已放入分类。"));
+  const cats = categories();
+  pool.forEach((id) => {
+    const info = groupInfo(id);
+    const select = el("select", { style: "max-width:150px" }, el("option", { value: "" }, "放入…"), cats.map((cat, index) => el("option", { value: index }, cat.label)));
+    select.addEventListener("change", () => { const cat = cats[Number(select.value)]; if (!cat) return; (cat.entry.children ??= []).push({ group: id }); open.add(cat.entry); rerender(); });
+    const row = el("div", { class: "row" },
+      el("span", { class: "grip" }, "⋮⋮"),
+      el("img", { class: "thumb", src: info.poster, alt: "" }),
+      el("span", { style: "flex:1; min-width:0" }, info.name, el("div", { class: "meta" }, `${id} · ${info.count} 条`)),
+      select,
+      info.uploaded && ONLINE ? el("button", { class: "icon danger", title: "彻底删除（连同视频文件）", onclick: () => purge(id, info.name) }, "删除") :
+      info.custom ? el("button", { class: "icon danger", title: "删除这个新增作品组的登记", onclick: () => { if (confirm(`删除「${info.name}」的登记？（不会删除 R2 上的视频文件）`)) { delete config.groups[id]; rerender(); } } }, "×") : null,
+    );
+    row.draggable = true;
+    row.addEventListener("dragstart", (event) => { dragging = id; event.dataTransfer.setData("text/plain", id); });
+    row.addEventListener("dragend", () => { dragging = null; clearDrop(); });
+    box.append(row);
+  });
+};
+
+// ---------- 新增作品组 ----------
+let kind = "archive";
+document.querySelectorAll("#new-form .seg button").forEach((button) => button.addEventListener("click", () => {
+  kind = button.dataset.kind;
+  document.querySelectorAll("#new-form .seg button").forEach((b) => b.classList.toggle("on", b === button));
+  document.querySelectorAll(".k-archive").forEach((node) => node.hidden = kind !== "archive");
+  document.querySelectorAll(".k-social").forEach((node) => node.hidden = kind !== "social");
+}));
+const suggestId = () => {
+  if ($("#n-id").dataset.touched) return;
+  const source = kind === "archive" ? $("#n-base").value.split("/").filter(Boolean).pop() : $("#n-media").value;
+  $("#n-id").value = slugify(source ?? "");
+};
+["#n-base", "#n-media"].forEach((selector) => $(selector).addEventListener("input", suggestId));
+$("#n-id").addEventListener("input", () => { $("#n-id").dataset.touched = "1"; });
+const readNew = () => {
+  const id = $("#n-id").value.trim();
+  const name = $("#n-name").value.trim();
+  const year = $("#n-year").value.trim() || "2026";
+  const en = $("#n-en").value.trim();
+  const names = en ? { en } : undefined;
+  const def = kind === "archive"
+    ? { kind, name, year, count: Number($("#n-count").value), mediaBase: $("#n-base").value.trim().replace(/^\/+|\/+$/g, ""), posterBase: $("#n-poster").value.trim() || undefined, names }
+    : { kind, name, year, files: $("#n-files").value.split(/[,，\s]+/).map((s) => s.trim().replace(/\.mp4$/i, "")).filter(Boolean), mediaId: $("#n-media").value.trim(), platform: $("#n-platform").value || undefined, names };
+  const errors = [];
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(id)) errors.push("编号只能用小写字母、数字和连字符");
+  else if (builtin[id] || config.groups[id]) errors.push(`编号「${id}」已经被用了`);
+  if (!name) errors.push("请填写名称");
+  if (kind === "archive" && !def.mediaBase) errors.push("请填写媒体文件夹");
+  if (kind === "archive" && !(def.count > 0)) errors.push("视频数量要大于 0");
+  if (kind === "social" && !def.mediaId) errors.push("请填写文件夹名");
+  if (kind === "social" && !def.files.length) errors.push("请填写至少一个文件名");
+  return { id, def, errors };
+};
+const showMsg = (box, type, text, list) => { box.replaceChildren(el("div", { class: `msg ${type}` }, text, list?.length ? el("ul", {}, list.map((item) => el("li", {}, item))) : null)); };
+const STATUS_LABEL = { poster: "封面", preview: "预览", stream: "流畅", original: "原画" };
+async function checkMedia(id, def, box) {
+  box.replaceChildren(el("div", { class: "msg" }, "检查中…"));
+  const response = await getJson(API.check, { method: "POST", body: JSON.stringify({ id, def }) });
+  const { results, errors } = await response.json();
+  if (errors) return showMsg(box, "err", "检查失败", errors);
+  const ok = (status) => status === 200 || status === 206;
+  const allOk = results.every((item) => Object.values(item.status).every(ok));
+  box.replaceChildren(
+    el("div", { class: `msg ${allOk ? "ok" : "err"}` }, allOk ? "全部文件都已就位。" : "有文件还没就位（红色）。没就位的版本在网站上会无法播放或没有封面。"),
+    el("table", { class: "check" }, el("tr", {}, el("th", {}, "#"), Object.values(STATUS_LABEL).map((label) => el("th", {}, label))),
+      results.map((item, index) => el("tr", {}, el("td", {}, String(index + 1).padStart(2, "0")),
+        Object.keys(STATUS_LABEL).map((key) => el("td", { class: ok(item.status[key]) ? "s-ok" : "s-bad", title: item[key] }, ok(item.status[key]) ? "✓" : (item.status[key] || "×")))))),
+  );
+}
+$("#n-check").addEventListener("click", () => {
+  const { id, def, errors } = readNew();
+  const box = $("#n-result");
+  if (errors.filter((e) => !e.startsWith("编号「")).length) return showMsg(box, "err", "请先补全：", errors);
+  checkMedia(id || "check", def, box);
+});
+$("#n-add").addEventListener("click", () => {
+  const { id, def, errors } = readNew();
+  if (errors.length) return showMsg($("#n-result"), "err", "还不能添加：", errors);
+  if (!def.names) delete def.names;
+  if (!def.posterBase) delete def.posterBase;
+  if (!def.platform && def.kind === "social") def.platform = "";
+  config.groups[id] = def;
+  showMsg($("#n-result"), "ok", `已放入作品池：「${def.name}」。在右侧作品池选择要放入的分类，或拖到左边的分类里，然后保存。`);
+  ["#n-name", "#n-en", "#n-base", "#n-poster", "#n-media", "#n-files", "#n-id"].forEach((s) => { $(s).value = ""; });
+  delete $("#n-id").dataset.touched;
+  rerender();
+});
+
+// ---------- 保存 / 恢复 ----------
+const prune = (value) => JSON.parse(JSON.stringify(value, (key, v) => (v === undefined ? undefined : v)));
+$("#save").addEventListener("click", async () => {
+  Object.keys(config.groups).forEach(cleanDef);
+  const body = prune(config);
+  const response = await getJson(API.save, { method: "POST", body: JSON.stringify({ config: body, base: version }) });
+  const result = await response.json();
+  const box = $("#save-msg");
+  if (!response.ok) return showMsg(box, "err", "没有保存，请先修正：", result.errors);
+  config = body; saved = JSON.stringify(config); version = result.version; refreshDirty();
+  showMsg(box, "ok", ONLINE ? "已保存，网站 1 分钟内更新（旧版本已自动备份，可在「历史版本」恢复）。" : `已保存。已经打开的网站页面需要按 ⌘R 刷新才会显示新内容（旧版本已备份为 ${result.backup}）。`);
+  loadBackups();
+});
+$("#revert").addEventListener("click", () => { if (!isDirty() || confirm("放弃所有未保存的修改？")) load(); });
+$("#add-top").addEventListener("click", () => addCategory(config.tree.children));
+$("#expand-all").addEventListener("click", () => { categories().forEach((cat) => open.add(cat.entry)); renderTree(); });
+$("#collapse-all").addEventListener("click", () => { open.clear(); renderTree(); });
+$("#featured-add-btn").addEventListener("click", () => { const id = $("#featured-add").value; if (id) { config.featured.push(id); rerender(); } });
+window.addEventListener("beforeunload", (event) => { if (isDirty()) event.preventDefault(); });
+
+async function loadBackups() {
+  const { backups } = await (await getJson(API.backups)).json();
+  const box = $("#backups"); box.replaceChildren();
+  if (!backups.length) box.append(el("div", { class: "empty-note", style: "padding-left:0" }, "还没有备份。第一次保存后会出现。"));
+  backups.slice(0, 12).forEach((name) => {
+    const m = name.match(/works-(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})(\d{2})/);
+    const label = m ? new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6])).toLocaleString("zh-CN") : name;
+    box.append(el("div", { class: "row" }, el("span", { style: "flex:1" }, label), el("button", { onclick: async () => {
+      if (!confirm(`恢复到 ${label} 的版本？`)) return;
+      const response = await getJson(API.restore, { method: "POST", body: JSON.stringify({ name }) });
+      if (response.ok) { await load(); showMsg($("#save-msg"), "ok", `已恢复到 ${label} 的版本。`); }
+    } }, "恢复")));
+  });
+}
+
+async function load() {
+  const data = await (await getJson(API.data)).json();
+  if (data.errors) { showMsg($("#save-msg"), "err", "无法载入作品数据：", data.errors); return; }
+  config = data.config; builtin = data.builtin; clips = data.clips ?? {}; version = data.version; saved = JSON.stringify(config);
+  config.groups ??= {};
+  if (!open.size) config.tree.children.forEach((entry) => { if (!entry.group) open.add(entry); });
+  else { open.clear(); config.tree.children.forEach((entry) => { if (!entry.group) open.add(entry); }); }
+  detail.clear();
+  rerender(); loadBackups(); renderUploadCats();
+}
+// ---------- 线上：上传新作品 / 彻底删除 ----------
+const CHUNK = 16 * 1024 * 1024;
+const catOptions = () => categoryPaths().map((cat) => el("option", { value: cat.path.join("/") }, cat.label));
+function renderUploadCats() {
+  if (!ONLINE) return;
+  for (const select of [$("#u-cat"), $("#b-cat"), ...document.querySelectorAll(".b-cat")]) {
+    const current = select.value;
+    select.replaceChildren(...catOptions());
+    if (current) select.value = current;
+  }
+}
+const categoryPaths = () => {
+  const out = [];
+  const walk = (entries, path, labels) => entries.forEach((entry) => {
+    if (entry.group) return;
+    const next = [...path, entry.slug]; const nextLabels = [...labels, entry.name];
+    out.push({ path: next, label: nextLabels.join(" / ") });
+    walk(entry.children ?? [], next, nextLabels);
+  });
+  walk(config.tree.children, [], []);
+  return out;
+};
+const newGroupId = (text) => {
+  const base = slugify(text || "") || "work";
+  let id = `${base}-${Date.now().toString(36).slice(-5)}`;
+  while (builtin[id] || config.groups[id]) id += "x";
+  return id;
+};
+async function uploadFile(file, groupId, index, report) {
+  const create = await (await getJson("/api/admin/upload", { method: "POST", body: JSON.stringify({ action: "create", groupId, index, filename: file.name }) })).json();
+  if (create.errors) throw new Error(create.errors.join("；"));
+  const parts = [];
+  const total = Math.max(1, Math.ceil(file.size / CHUNK));
+  for (let part = 1; part <= total; part += 1) {
+    const blob = file.slice((part - 1) * CHUNK, part * CHUNK);
+    let result = null;
+    for (let attempt = 0; attempt < 4 && !result; attempt += 1) {
+      try {
+        const response = await getJson(`/api/admin/upload?key=${encodeURIComponent(create.key)}&uploadId=${encodeURIComponent(create.uploadId)}&part=${part}`, { method: "PUT", body: blob });
+        if (response.ok) result = await response.json();
+      } catch { /* 网络中断：稍等再试这一块 */ }
+      if (!result) await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
+    }
+    if (!result) throw new Error(`第 ${part} 块上传失败`);
+    parts.push(result);
+    report(part / total);
+  }
+  const done = await (await getJson("/api/admin/upload", { method: "POST", body: JSON.stringify({ action: "complete", key: create.key, uploadId: create.uploadId, parts }) })).json();
+  if (done.errors) throw new Error(done.errors.join("；"));
+  return create.key;
+}
+if (ONLINE) {
+  $("#upload-panel").hidden = false;
+  $("#batch-panel").hidden = false;
+  $("#register-panel").hidden = true;
+  $("#u-year").value = String(new Date().getFullYear());
+  $("#mode-hint").textContent = "在线后台：拖动 ⋮⋮ 排序或移动；改完点「保存」，网站 1 分钟内更新。";
+  // 上传一组视频（逐个分块上传），全部上传完再通知转码。返回提示文字
+  const uploadGroup = async ({ name, en, year, category, files, publish }, report) => {
+    const groupId = newGroupId(en || name);
+    const keys = [];
+    for (const [index, file] of files.entries()) {
+      keys.push(await uploadFile(file, groupId, index + 1, (ratio) => report(index, `${Math.round(ratio * 100)}%`)));
+      report(index, "已上传");
+    }
+    const response = await getJson("/api/admin/process", { method: "POST", body: JSON.stringify({ groupId, name, en, year, publish, category: category.split("/").filter(Boolean), sources: keys }) });
+    const result = await response.json();
+    if (!response.ok) throw new Error((result.errors || []).join("；"));
+    return result.warning || "";
+  };
+  const byName = (a, b) => a.name.localeCompare(b.name, undefined, { numeric: true });
+  const isVideo = (file) => /\.(mp4|mov|m4v)$/i.test(file.name) && !file.name.startsWith(".");
+  $("#u-start").addEventListener("click", async () => {
+    const files = [...$("#u-files").files].sort(byName);
+    const name = $("#u-name").value.trim();
+    const box = $("#u-progress");
+    if (!files.length || !name) return showMsg(box, "err", "请填写名称并选择视频。");
+    if (isDirty()) return showMsg(box, "err", "你有未保存的修改，请先保存或放弃修改，再上传。");
+    $("#u-start").disabled = true;
+    const rows = files.map((file) => el("div", { class: "meta" }, `${file.name}：等待中`));
+    box.replaceChildren(el("div", { class: "list", style: "margin-top:10px" }, rows));
+    window.onbeforeunload = () => "上传还没完成";
+    try {
+      const warning = await uploadGroup({ name, en: $("#u-en").value.trim(), year: $("#u-year").value.trim(), category: $("#u-cat").value, files, publish: $("#u-publish").checked }, (index, text) => { rows[index].textContent = `${files[index].name}：${text}`; });
+      showMsg(box, warning ? "err" : "ok", warning || `上传完成，正在生成预览和流畅版，处理好会给你发邮件。${$("#u-publish").checked ? "完成后自动出现在网站上。" : "完成后先是隐藏状态：在分类里点开「详情」预览，满意后点「发布」。"}`);
+      ["#u-name", "#u-en", "#u-files"].forEach((s) => { $(s).value = ""; });
+      await load();
+    } catch (error) {
+      showMsg(box, "err", `上传中断：${error.message}。已上传的部分会保留，可以重新上传。`);
+    } finally {
+      $("#u-start").disabled = false;
+      window.onbeforeunload = null;
+    }
+  });
+
+  // ---------- 批量上传：一个子文件夹 = 一个作品组 ----------
+  let batch = [];
+  $("#b-year").value = String(new Date().getFullYear());
+  $("#b-cat").addEventListener("change", () => document.querySelectorAll(".b-cat").forEach((select) => { select.value = $("#b-cat").value; }));
+  $("#b-folder").addEventListener("change", () => {
+    const groups = new Map();
+    for (const file of $("#b-folder").files) {
+      if (!isVideo(file)) continue;
+      const parts = (file.webkitRelativePath || file.name).split("/");
+      const folder = parts.length > 2 ? parts[1] : parts[0];
+      if (!groups.has(folder)) groups.set(folder, []);
+      groups.get(folder).push(file);
+    }
+    batch = [...groups].sort(([a], [b]) => a.localeCompare(b, undefined, { numeric: true })).map(([folder, files]) => {
+      const item = { folder, files: files.sort(byName), on: el("input", { type: "checkbox", checked: true, style: "width:auto" }), name: el("input", { value: folder }), cat: el("select", { class: "b-cat" }, ...catOptions()), status: el("span", { class: "meta" }, "") };
+      item.cat.value = $("#b-cat").value;
+      const size = files.reduce((sum, file) => sum + file.size, 0) / 1048576;
+      item.row = el("div", { class: "item", style: "display:grid; grid-template-columns:auto minmax(0,1.3fr) minmax(0,1fr); gap:6px 10px; align-items:center; padding:8px 0; border-bottom:1px solid var(--line)" },
+        item.on, item.name, item.cat,
+        el("span"), el("span", { class: "meta", style: "grid-column: span 2" }, `${files.length} 条 · ${size >= 1024 ? `${(size / 1024).toFixed(1)} GB` : `${Math.round(size)} MB`} `, item.status));
+      return item;
+    });
+    $("#b-list").replaceChildren(...(batch.length ? batch.map((item) => item.row) : [el("div", { class: "meta" }, "这个文件夹里没有找到 mp4 / mov / m4v 视频。")]));
+    $("#b-start").disabled = !batch.length;
+    $("#b-progress").replaceChildren();
+  });
+  $("#b-start").addEventListener("click", async () => {
+    const box = $("#b-progress");
+    const chosen = batch.filter((item) => item.on.checked);
+    if (!chosen.length) return showMsg(box, "err", "请至少勾选一组。");
+    if (chosen.some((item) => !item.name.value.trim())) return showMsg(box, "err", "每组都需要名称。");
+    if (isDirty()) return showMsg(box, "err", "你有未保存的修改，请先保存或放弃修改，再上传。");
+    $("#b-start").disabled = true; $("#b-folder").disabled = true;
+    window.onbeforeunload = () => "上传还没完成";
+    const failed = [];
+    for (const [n, item] of chosen.entries()) {
+      try {
+        const warning = await uploadGroup({ name: item.name.value.trim(), en: "", year: $("#b-year").value.trim(), category: item.cat.value, files: item.files, publish: $("#b-publish").checked },
+          (index, text) => { item.status.textContent = `· 第 ${index + 1}/${item.files.length} 条 ${text}`; });
+        item.status.textContent = warning ? `· ${warning}` : "· 已上传，转码中";
+        item.on.checked = false;
+      } catch (error) {
+        item.status.textContent = `· 失败：${error.message}`;
+        failed.push(item.name.value.trim());
+      }
+      showMsg(box, "ok", `进度：${n + 1} / ${chosen.length} 组`);
+    }
+    await load();
+    showMsg(box, failed.length ? "err" : "ok", failed.length ? `有 ${failed.length} 组没传完，保持勾选状态，可以再点一次「全部上传」重试：` : `全部 ${chosen.length} 组已上传，正在转码。几分钟后刷新页面就能看到。`, failed);
+    $("#b-start").disabled = false; $("#b-folder").disabled = false;
+    window.onbeforeunload = null;
+  });
+}
+// ---------- 关于页与工作履历 ----------
+const ABOUT_LANGS = [["zh", "中文"]];
+async function openAbout(target) {
+  const data = await (await getJson("/api/admin/about")).json();
+  if (data.errors) return showMsg($("#save-msg"), "err", "载入失败：", data.errors);
+  const content = structuredClone(data.content);
+  let lang = "zh", close;
+  const body = el("div");
+  const blank = () => ({ statement: [], intro: "", body: [], focus: [], experience: [] });
+  const linesField = (text, key, sep, rows) => el("textarea", { rows, oninput: (event) => { text[key] = event.target.value.split(sep).map((line) => line.trim()).filter(Boolean); } }, text[key].join(sep === "\n" ? "\n" : "\n\n"));
+  const render = () => {
+    content[lang] ??= blank();
+    const text = content[lang];
+    const jobs = el("tbody");
+    const renderJobs = () => jobs.replaceChildren(...text.experience.map((job, index) => el("tr", {},
+      ...[0, 1, 2].map((col) => el("td", { style: col === 0 ? "width:22%" : "" }, el("input", { value: job[col] ?? "", placeholder: ["2024—2026", "公司 / 团队", "职位"][col], oninput: (event) => { job[col] = event.target.value; } }))),
+      el("td", { style: "white-space:nowrap" },
+        el("button", { class: "icon", disabled: index === 0, onclick: () => { [text.experience[index - 1], text.experience[index]] = [text.experience[index], text.experience[index - 1]]; renderJobs(); } }, "↑"),
+        el("button", { class: "icon danger", onclick: () => { text.experience.splice(index, 1); renderJobs(); } }, "删")))));
+    renderJobs();
+    body.replaceChildren(...[
+      el("div", { class: "tabs" }, ...ABOUT_LANGS.map(([code, label]) => el("button", { class: code === lang ? "on" : "", onclick: () => { lang = code; render(); } }, label))),
+      lang !== "zh" ? el("p", { class: "sub", style: "color:var(--muted); font-size:12.5px" }, "这个语言的「简介」留空就会显示中文。中文改过之后，记得把外语也对应改一下。") : null,
+      el("div", { class: "form" },
+        el("label", {}, "主张句"), linesField(text, "statement", "\n", 3),
+        el("label", {}, ""), el("span", { class: "meta", style: "font-size:12px; color:var(--muted)" }, "大字标题，一行一句，最后一行带下划线"),
+        el("label", {}, "简介"), el("textarea", { rows: 3, oninput: (event) => { text.intro = event.target.value; } }, text.intro),
+        el("label", {}, "正文"), linesField(text, "body", /\n\s*\n/, 7),
+        el("label", {}, ""), el("span", { class: "meta", style: "font-size:12px; color:var(--muted)" }, "段落之间空一行"),
+        el("label", {}, "擅长方向"), linesField(text, "focus", "\n", 4),
+      ),
+      el("div", { style: "margin-top:14px; font-weight:500" }, "工作履历（从新到旧）"),
+      el("table", { class: "jobs" }, jobs),
+      el("button", { style: "margin-top:6px", onclick: () => { text.experience.push(["", "", ""]); renderJobs(); } }, "+ 添加一条履历"),
+    ].filter(Boolean));
+  };
+  const msg = el("div");
+  const saveButton = el("button", { class: "primary", onclick: async () => {
+    saveButton.disabled = true;
+    for (const [code] of ABOUT_LANGS) if (content[code]) content[code].experience = content[code].experience.filter((job) => job.some((cell) => cell.trim()));
+    const response = await getJson("/api/admin/about", { method: "POST", body: JSON.stringify({ content, base: data.version }) });
+    const result = await response.json().catch(() => ({}));
+    saveButton.disabled = false;
+    if (!response.ok) return showMsg(msg, "err", "保存失败：", result.errors);
+    close();
+    if (target) await openAbout(target);
+    showMsg($("#save-msg"), "ok", "关于页已保存，网站 1 分钟内更新（旧版本已自动备份）。");
+  } }, "保存关于页");
+  render();
+  close = present(target, "关于页与工作履历", [saveButton], el("p", { class: "sub", style: "color:var(--muted); margin:-8px 0 14px" }, "个人介绍、擅长方向和工作履历。"), el("div", { class: "card", style: "background:var(--card)" }, body), msg);
+}
+
+// ---------- 网站设置 ----------
+const THEME_PRESETS = [
+  ["默认暖白", { paper: "#efebe7", ink: "#080808", night: "#050505", muted: "#7f7f7f" }],
+  ["纯白", { paper: "#f7f7f5", ink: "#111111", night: "#0a0a0a", muted: "#808080" }],
+  ["奶油", { paper: "#f3ece0", ink: "#1a1714", night: "#120f0c", muted: "#857c70" }],
+  ["冷灰", { paper: "#e8eaec", ink: "#0d1013", night: "#07090b", muted: "#7a8086" }],
+  ["深灰底", { paper: "#d9d6d1", ink: "#0b0b0b", night: "#161616", muted: "#6f6c68" }],
+];
+async function openSiteSettings(target) {
+  const data = await (await getJson("/api/admin/site")).json();
+  if (data.errors) return showMsg($("#save-msg"), "err", "载入失败：", data.errors);
+  const settings = structuredClone(data.settings);
+  const d = data.defaults;
+  let tab = "text", lang = "zh", close;
+  const body = el("div");
+  const langTabs = (render) => el("div", { class: "tabs" }, ...ABOUT_LANGS.map(([code, label]) => el("button", { class: code === lang ? "on" : "", onclick: () => { lang = code; render(); } }, label)));
+  const hint = (text) => el("p", { class: "sub", style: "color:var(--muted); font-size:12.5px; margin:4px 0 10px" }, text);
+  const views = {
+    text: () => [hint("留空就用默认文字（输入框里的灰字）。只改你想改的那几项。"), langTabs(render), el("div", { class: "form" }, ...data.keys.flatMap(([key, label]) => [
+      el("label", {}, label),
+      el("input", { value: settings.text?.[lang]?.[key] ?? "", placeholder: d.text[lang]?.[key] ?? "", oninput: (event) => { ((settings.text ??= {})[lang] ??= {})[key] = event.target.value; } }),
+    ]))],
+    menu: () => [hint("菜单里每一项下面的小字。留空用默认。"), langTabs(render), el("div", { class: "form" }, ...d.menu.titles.flatMap((title, index) => [
+      el("label", {}, title),
+      el("input", { value: settings.menuCaptions?.[lang]?.[index] ?? "", placeholder: d.menu.captions[lang]?.[index] ?? "", oninput: (event) => { const list = ((settings.menuCaptions ??= {})[lang] ??= []); list[index] = event.target.value; } }),
+    ]))],
+    contact: () => {
+      const c = (settings.contact ??= structuredClone(d.contact));
+      c.whatsapp ??= { label: "", href: "" };
+      return [hint("显示在联系页、菜单和页脚。"), el("div", { class: "form" },
+        el("label", {}, "邮箱"), el("textarea", { rows: 2, oninput: (event) => { c.emails = event.target.value.split(/[\s,，]+/).filter(Boolean); } }, c.emails.join("\n")),
+        el("label", {}, ""), el("span", { class: "meta", style: "font-size:12px; color:var(--muted)" }, "一行一个，第一个用于「发邮件」按钮"),
+        el("label", {}, "微信号"), el("input", { value: c.wechat, oninput: (event) => { c.wechat = event.target.value; } }),
+        el("label", {}, "Line"), el("input", { value: c.line, oninput: (event) => { c.line = event.target.value; } }),
+        el("label", {}, "WhatsApp 显示"), el("input", { value: c.whatsapp.label, oninput: (event) => { c.whatsapp.label = event.target.value; } }),
+        el("label", {}, "WhatsApp 链接"), el("input", { value: c.whatsapp.href, placeholder: "https://wa.me/86…", oninput: (event) => { c.whatsapp.href = event.target.value; } }),
+      ), el("button", { class: "link", onclick: () => { delete settings.contact; render(); } }, "恢复默认联系方式")];
+    },
+    theme: () => {
+      const current = { ...d.theme, ...(settings.theme ?? {}) };
+      const swatch = el("div", { style: `margin-top:12px; display:grid; grid-template-columns:1fr 1fr; border-radius:8px; overflow:hidden; border:1px solid var(--line)` },
+        el("div", { style: `background:${current.paper}; color:${current.ink}; padding:18px` }, el("div", { style: "font:28px/1.1 serif" }, "品牌视觉"), el("div", { style: `color:${current.muted}; font-size:12px; margin-top:6px` }, "浅色模式")),
+        el("div", { style: `background:${current.night}; color:${current.paper}; padding:18px` }, el("div", { style: "font:28px/1.1 serif" }, "关于我"), el("div", { style: `color:${current.muted}; font-size:12px; margin-top:6px` }, "深色模式")));
+      const pick = (key, label) => [el("label", {}, label), el("input", { type: "color", value: current[key], style: "width:80px; height:30px; padding:2px", oninput: (event) => { (settings.theme ??= {})[key] = event.target.value; render(); } })];
+      return [hint("先选一套预设，再按需要微调。改完保存后网站 1 分钟内更新。"),
+        el("div", { class: "tabs" }, ...THEME_PRESETS.map(([name, colors]) => el("button", { class: JSON.stringify(colors) === JSON.stringify(current) ? "on" : "", onclick: () => { settings.theme = { ...colors }; render(); } }, name))),
+        el("div", { class: "form" }, ...pick("paper", "浅色背景"), ...pick("ink", "文字颜色"), ...pick("night", "深色背景"), ...pick("muted", "次要文字")),
+        swatch];
+    },
+    font: () => [hint(data.fonts.length > 1 ? "选好后保存，网站 1 分钟内换成新字体。" : "目前只装了默认这一套。其他字体方案安装后会出现在这里。"),
+      ...data.fonts.map((font) => el("label", { style: "display:flex; gap:8px; align-items:center; padding:8px 0; border-bottom:1px solid var(--line); cursor:pointer" },
+        el("input", { type: "radio", name: "font", checked: (settings.font ?? "A") === font.id, style: "width:auto", onchange: () => { settings.font = font.id; } }),
+        el("span", { style: "flex:1" }, font.name), el("span", { class: "meta", style: "color:var(--muted); font-size:12px" }, font.note)))],
+    preloader: () => {
+      // 打开网站时加载页轮播的图片：可以从作品封面里挑，也可以上传；按顺序轮播
+      const list = settings.preloader?.length ? settings.preloader : [...d.preloader];
+      const set = (next) => { settings.preloader = next; render(); };
+      const msg = el("div");
+      const file = el("input", { type: "file", accept: "image/jpeg,image/png,image/webp", multiple: true });
+      file.addEventListener("change", async () => {
+        for (const picked of file.files) {
+          const bitmap = await createImageBitmap(picked).catch(() => null);
+          if (!bitmap) { showMsg(msg, "err", `${picked.name} 打不开。`); continue; }
+          const { blob } = await toJpeg(bitmap, bitmap.width, bitmap.height);
+          const response = await getJson("/api/admin/image?kind=preloader", { method: "POST", headers: { "Content-Type": "image/jpeg" }, body: blob });
+          const result = await response.json().catch(() => ({}));
+          if (!response.ok) { showMsg(msg, "err", "上传失败：", result.errors); continue; }
+          list.push(result.src);
+        }
+        set([...list]);
+      });
+      const thumb = (src, index) => el("div", { class: "clip" },
+        el("img", { src, alt: "", loading: "lazy" }), el("span", { class: "no" }, String(index + 1).padStart(2, "0")),
+        el("div", { class: "ops" },
+          el("button", { disabled: index === 0, onclick: () => { const next = [...list]; [next[index - 1], next[index]] = [next[index], next[index - 1]]; set(next); } }, "←"),
+          el("button", { disabled: index === list.length - 1, onclick: () => { const next = [...list]; [next[index + 1], next[index]] = [next[index], next[index + 1]]; set(next); } }, "→"),
+          el("button", { class: "danger", onclick: () => { if (list.length === 1) return alert("至少保留一张。"); set(list.filter((_, i) => i !== index)); } }, "移除")));
+      // 可以挑选的作品封面（每个作品组取前几张，避免太长）
+      const covers = [...new Set(Object.entries(clips).flatMap(([id, items]) => items.slice(0, 6).map((clip) => coverOf(id, clip))))].filter((src) => !list.includes(src));
+      const picker = el("details", { class: "help", style: "margin-top:12px" }, el("summary", {}, `从作品封面里挑（${covers.length} 张）`),
+        el("div", { class: "clips", style: "margin-top:8px" }, ...covers.map((src) => el("div", { class: "clip" }, el("img", { src, alt: "", loading: "lazy", title: "加入", onclick: () => set([...list, src]) }), el("div", { class: "ops" }, el("button", { onclick: () => set([...list, src]) }, "加入"))))));
+      return [hint("打开网站时，加载画面中间轮播的图片，按顺序播放（加载页会显示成黑白）。建议 8–12 张，竖图效果最好。"),
+        el("div", { class: "clips" }, ...list.map(thumb)),
+        el("div", { style: "display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:10px" }, el("span", { class: "meta" }, "上传图片："), file,
+          settings.preloader?.length ? el("button", { class: "link", onclick: () => { delete settings.preloader; render(); } }, "恢复默认图片") : null),
+        msg, picker];
+    },
+    seo: () => {
+      settings.seo ??= {};
+      const preview = el("img", { src: settings.seo.image || "", style: `display:${settings.seo.image ? "block" : "none"}; max-width:260px; border-radius:6px; margin-top:8px` });
+      const file = el("input", { type: "file", accept: "image/jpeg,image/png,image/webp" });
+      const msg = el("div");
+      file.addEventListener("change", async () => {
+        const bitmap = await createImageBitmap(file.files[0]).catch(() => null);
+        if (!bitmap) return showMsg(msg, "err", "这张图片打不开。");
+        const scale = Math.min(1, 1200 / bitmap.width);
+        const canvas = el("canvas"); canvas.width = Math.round(bitmap.width * scale); canvas.height = Math.round(bitmap.height * scale);
+        canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+        const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.86));
+        const response = await getJson("/api/admin/image", { method: "POST", headers: { "Content-Type": "image/jpeg" }, body: blob });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) return showMsg(msg, "err", "上传失败：", result.errors);
+        settings.seo.image = result.src; preview.src = result.src; preview.style.display = "block";
+        showMsg(msg, "ok", "图片已上传，点「保存设置」后生效。");
+      });
+      return [hint("分享网站链接到微信、社交平台时显示的简介和图片；搜索引擎也会读取简介。图片建议横图，宽 1200 左右。"),
+        el("div", { class: "form" },
+          el("label", {}, "简介（中文）"), el("textarea", { rows: 3, placeholder: "例如：我的个人作品集：品牌短片、剪辑与摄影。", oninput: (event) => { (settings.seo.description ??= {}).zh = event.target.value; } }, settings.seo.description?.zh ?? ""),
+          el("label", {}, "分享图片"), el("div", {}, file, preview, settings.seo.image ? el("button", { class: "link danger", onclick: () => { delete settings.seo.image; render(); } }, "不用分享图片") : null, msg))];
+    },
+  };
+  const TABS = [["text", "文案"], ["contact", "联系方式"], ["theme", "配色"], ["seo", "分享卡片"]];
+  function render() {
+    body.replaceChildren(el("div", { class: "tabs", style: "border-bottom:1px solid var(--line); padding-bottom:10px" }, ...TABS.map(([key, label]) => el("button", { class: key === tab ? "on" : "", onclick: () => { tab = key; render(); } }, label))), ...views[tab]().filter(Boolean));
+  }
+  const msg = el("div");
+  const saveButton = el("button", { class: "primary", onclick: async () => {
+    saveButton.disabled = true;
+    const response = await getJson("/api/admin/site", { method: "POST", body: JSON.stringify({ settings, base: data.version }) });
+    const result = await response.json().catch(() => ({}));
+    saveButton.disabled = false;
+    if (!response.ok) return showMsg(msg, "err", "保存失败：", result.errors);
+    close();
+    if (target) await openSiteSettings(target);
+    showMsg($("#save-msg"), "ok", "网站设置已保存，网站 1 分钟内更新。");
+  } }, "保存设置");
+  render();
+  close = present(target, "网站设置", [saveButton], el("div", { class: "card", style: "background:var(--card)" }, body), msg);
+}
+
+
+// ---------- 访问统计（看板排法参考 Plausible / Umami：数字卡片 → 趋势图 → 各维度占比条） ----------
+const PAGE_NAMES = [[/^\/$/, "首页"], [/^\/about/, "关于"], [/^\/contact/, "联系"], [/^\/index/, "作品索引"], [/^\/film\//, "作品详情"], [/^\/work/, "作品列表"], [/^\/preview\//, "私密预览"]];
+const LANG_NAMES = { en: "英文", vi: "越南语", ja: "日语", ko: "韩语", th: "泰语" };
+const pageLabel = (path) => {
+  const lang = path.match(/^\/(en|vi|ja|ko|th)(?=\/|$)/)?.[1];
+  const plain = path.replace(/^\/(en|vi|ja|ko|th)(?=\/|$)/, "") || "/";
+  const hit = PAGE_NAMES.find(([re]) => re.test(plain));
+  return [hit ? hit[1] : plain, lang ? `（${LANG_NAMES[lang]}）` : "", hit && plain !== "/" ? ` ${plain}` : ""].join("");
+};
+const CHANNELS = [
+  ["搜索引擎", /google\.|bing\.com|baidu\.com|sogou|so\.com|yandex|duckduckgo/],
+  ["小红书", /xiaohongshu|xhslink/], ["微信 / QQ", /weixin|wechat|qq\.com/], ["抖音 / TikTok", /douyin|tiktok/], ["微博", /weibo/],
+  ["Instagram", /instagram/], ["Facebook", /facebook|fb\.com/], ["LinkedIn", /linkedin/], ["X / Twitter", /^t\.co$|twitter|x\.com/], ["Behance / 站酷", /behance|zcool/],
+];
+// 本站域名（站内跳转不算来源）：按当前打开后台的域名判断
+const SELF_HOST = location.hostname.replace(/^www\./, "");
+const SELF = { test: (host) => host === SELF_HOST || host.endsWith(`.${SELF_HOST}`) };
+const channelOf = (host) => (!host || host === "（直接访问）" ? "直接访问" : CHANNELS.find(([, re]) => re.test(host))?.[0] ?? "其他网站");
+const BROWSERS = { ChromeMobile: "Chrome（手机）", Chrome: "Chrome", MobileSafari: "Safari（手机）", Safari: "Safari", WeChat: "微信内打开", Edge: "Edge", Firefox: "Firefox", FirefoxMobile: "Firefox（手机）", SamsungBrowser: "三星浏览器", QQBrowser: "QQ 浏览器", UCBrowser: "UC 浏览器", Opera: "Opera", Unknown: "未识别" };
+const SYSTEMS = { MacOSX: "macOS", "Mac OS X": "macOS", Windows: "Windows", iOS: "iOS", Android: "Android", Linux: "Linux", ChromeOS: "ChromeOS", Unknown: "未识别" };
+const DEVICES = { desktop: "电脑", mobile: "手机", tablet: "平板" };
+const regionNames = (() => { try { return new Intl.DisplayNames(["zh-CN"], { type: "region" }); } catch { return null; } })();
+const flag = (code) => (/^[A-Z]{2}$/.test(code) ? String.fromCodePoint(...[...code].map((c) => 127397 + c.charCodeAt(0))) : "🌐");
+const regionLabel = (code) => `${flag(code)}  ${regionNames?.of(code) ?? code}`;
+const fmt = (n) => (n >= 10000 ? `${(n / 10000).toFixed(1)} 万` : String(Math.round(n)));
+const pct = (part, whole) => (whole ? Math.round((part / whole) * 100) : 0);
+const SVGNS = "http://www.w3.org/2000/svg";
+const svg = (tag, attrs = {}, ...children) => { const node = document.createElementNS(SVGNS, tag); for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v); node.append(...children); return node; };
+
+/** 占比条列表：每行底下一条按比例的浅色条。 */
+const barList = (rows, { label = (x) => x, total, limit = 8 } = {}) => {
+  if (!rows.length) return el("div", { class: "empty" }, "暂无数据");
+  rows = [...rows].sort((a, b) => b.count - a.count);
+  const sum = total ?? rows.reduce((acc, row) => acc + row.count, 0);
+  const max = Math.max(...rows.map((row) => row.count));
+  return el("div", { class: "bars" }, ...rows.slice(0, limit).map((row) => el("div", { class: "bar", title: `${label(row.name)}：${row.count}` },
+    el("i", { style: `width:${Math.max(2, (row.count / max) * 100)}%` }), el("span", {}, label(row.name)), el("b", {}, fmt(row.count), el("em", {}, `${pct(row.count, sum)}%`)))));
+};
+/** 按名字合并相同项（例如多个来源网站归到同一个渠道）。 */
+const groupRows = (rows, keyOf) => {
+  const map = new Map();
+  rows.forEach((row) => { const key = keyOf(row.name); map.set(key, (map.get(key) ?? 0) + row.count); });
+  return [...map].map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count);
+};
+/** 环形图（设备占比）。 */
+const donut = (rows, label) => {
+  const total = rows.reduce((acc, row) => acc + row.count, 0);
+  if (!total) return el("div", { class: "empty" }, "暂无数据");
+  const colors = ["#141414", "#a8957c", "#d9cfc1", "#7d8b92"];
+  const r = 42, c = 2 * Math.PI * r;
+  let offset = 0;
+  const ring = svg("svg", { viewBox: "0 0 120 120", style: "width:120px; flex:0 0 auto" }, svg("circle", { cx: 60, cy: 60, r, fill: "none", stroke: "#f1eeea", "stroke-width": 16 }),
+    ...rows.map((row, index) => { const len = (row.count / total) * c; const arc = svg("circle", { cx: 60, cy: 60, r, fill: "none", stroke: colors[index % colors.length], "stroke-width": 16, "stroke-dasharray": `${len} ${c - len}`, "stroke-dashoffset": -offset, transform: "rotate(-90 60 60)" }); offset += len; return arc; }),
+    svg("text", { x: 60, y: 57, "text-anchor": "middle", "font-size": 15, "font-weight": 600, fill: "#141414" }, `${pct(rows[0].count, total)}%`),
+    svg("text", { x: 60, y: 74, "text-anchor": "middle", "font-size": 10, fill: "#77726c" }, label(rows[0].name)));
+  return el("div", { style: "display:flex; gap:16px; align-items:center" }, ring,
+    el("div", { class: "bars", style: "flex:1" }, ...rows.map((row, index) => el("div", { class: "bar" }, el("span", {}, el("i", { style: `position:static; display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:7px; background:${colors[index % colors.length]}` }), label(row.name)), el("b", {}, `${pct(row.count, total)}%`, el("em", {}, fmt(row.count)))))));
+};
+/** 趋势图：每天的浏览（面积）和访问（线），没有数据的日子补 0；鼠标移上去显示当天数字。 */
+const trendChart = (series, width) => {
+  // 按实际宽度画，文字不会被拉伸
+  const W = Math.max(280, Math.round(width)), H = W < 600 ? 180 : 220, P = { l: 34, r: 8, t: 12, b: 24 };
+  const max = Math.max(4, ...series.map((d) => d.views));
+  const step = Math.pow(10, Math.floor(Math.log10(max))) * (max / Math.pow(10, Math.floor(Math.log10(max))) > 5 ? 2 : 1);
+  const top = Math.ceil(max / step) * step;
+  const x = (i) => P.l + (series.length === 1 ? 0.5 : i / (series.length - 1)) * (W - P.l - P.r);
+  const y = (v) => P.t + (1 - v / top) * (H - P.t - P.b);
+  const line = (key) => series.map((d, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(d[key]).toFixed(1)}`).join("");
+  const grid = []; for (let v = 0; v <= top; v += step) grid.push(svg("g", {}, svg("line", { x1: P.l, x2: W - P.r, y1: y(v), y2: y(v), stroke: "#eee9e2" }), svg("text", { x: P.l - 6, y: y(v) + 4, "text-anchor": "end", "font-size": 11, fill: "#9a948d" }, fmt(v))));
+  const labelEvery = Math.ceil(series.length / (W < 600 ? 4 : 8));
+  const last = series.length - 1;
+  const xs = series.map((d, i) => ((i % labelEvery === 0 && last - i >= labelEvery / 2) || i === last ? svg("text", { x: x(i), y: H - 6, "text-anchor": "middle", "font-size": 11, fill: "#9a948d" }, d.date.slice(5).replace("-", "/")) : null)).filter(Boolean);
+  const dot = svg("circle", { r: 4, fill: "#141414", stroke: "#fff", "stroke-width": 2, style: "display:none" });
+  const guide = svg("line", { y1: P.t, y2: H - P.b, stroke: "#c9c1b6", "stroke-dasharray": "3 3", style: "display:none" });
+  const area = svg("path", { d: `${line("views")}L${x(series.length - 1)},${y(0)}L${x(0)},${y(0)}Z`, fill: "url(#zfGrad)" });
+  const chart = svg("svg", { viewBox: `0 0 ${W} ${H}`, style: `height:${H}px` },
+    svg("defs", {}, svg("linearGradient", { id: "zfGrad", x1: 0, x2: 0, y1: 0, y2: 1 }, svg("stop", { offset: "0%", "stop-color": "#141414", "stop-opacity": ".18" }), svg("stop", { offset: "100%", "stop-color": "#141414", "stop-opacity": "0" }))),
+    ...grid, area, svg("path", { d: line("views"), fill: "none", stroke: "#141414", "stroke-width": 2, "vector-effect": "non-scaling-stroke" }),
+    svg("path", { d: line("visits"), fill: "none", stroke: "#a8957c", "stroke-width": 2, "stroke-dasharray": "5 4", "vector-effect": "non-scaling-stroke" }), ...xs, guide, dot);
+  const tip = el("div", { class: "tip" });
+  const box = el("div", { class: "chart" }, chart, tip);
+  chart.addEventListener("mousemove", (event) => {
+    const rect = chart.getBoundingClientRect();
+    const i = Math.max(0, Math.min(series.length - 1, Math.round(((event.clientX - rect.left) / rect.width * W - P.l) / (W - P.l - P.r) * (series.length - 1))));
+    const d = series[i];
+    const px = x(i) / W * rect.width, py = y(d.views) / H * rect.height;
+    dot.setAttribute("cx", x(i)); dot.setAttribute("cy", y(d.views)); dot.style.display = guide.style.display = "";
+    guide.setAttribute("x1", x(i)); guide.setAttribute("x2", x(i));
+    tip.textContent = `${d.date.slice(5).replace("-", " 月 ")} 日 · 浏览 ${d.views} · 访问 ${d.visits}`;
+    tip.style.left = `${px}px`; tip.style.top = `${py}px`; tip.style.display = "block";
+  });
+  chart.addEventListener("mouseleave", () => { tip.style.display = dot.style.display = guide.style.display = "none"; });
+  return box;
+};
+/** 一天中的访问时段（北京时间）。 */
+const hourChart = (hours) => {
+  const buckets = Array(24).fill(0);
+  hours.forEach((row) => { buckets[(new Date(row.at).getUTCHours() + 8) % 24] += row.views; });
+  const max = Math.max(1, ...buckets);
+  const peak = buckets.indexOf(max);
+  return el("div", {},
+    el("div", { style: "display:flex; align-items:flex-end; gap:3px; height:90px" }, ...buckets.map((v, h) => el("div", { title: `${h}:00–${h + 1}:00 · ${v} 次`, style: `flex:1; height:${Math.max(3, (v / max) * 90)}px; border-radius:3px 3px 0 0; background:${h === peak && v ? "#141414" : v ? "#a8957c" : "#eee9e2"}` }))),
+    el("div", { style: "display:flex; justify-content:space-between; font-size:11px; color:#9a948d; margin-top:4px" }, ...["0 点", "6 点", "12 点", "18 点", "24 点"].map((t) => el("span", {}, t))),
+    el("div", { class: "meta", style: "margin-top:6px; font-size:12px; color:var(--muted)" }, hours.length ? `访问最多的时段：${peak}:00–${peak + 1}:00（北京时间）` : ""));
+};
+const deltaOf = (now, before) => {
+  if (!before) return el("div", { class: "delta flat" }, now ? "上一周期没有数据" : "—");
+  const change = Math.round(((now - before) / before) * 100);
+  return el("div", { class: `delta ${change > 0 ? "up" : change < 0 ? "down" : "flat"}` }, `${change > 0 ? "▲" : change < 0 ? "▼" : "■"} ${Math.abs(change)}%`, el("span", { style: "color:var(--muted)" }, " 比上一周期"));
+};
+// 「不统计这台设备」：在这台设备的浏览器里做个记号，网站页面看到记号就不发送计数（自己反复打开网站不会把数字搞乱）
+const trackToggle = () => {
+  let off = false;
+  try { off = localStorage.getItem("zf-no-track") === "1"; } catch { /* 无痕模式等 */ }
+  const box = el("input", { type: "checkbox", checked: off, style: "width:auto", onchange: () => { try { box.checked ? localStorage.setItem("zf-no-track", "1") : localStorage.removeItem("zf-no-track"); } catch { /* ignore */ } } });
+  return el("label", { style: "display:flex; gap:8px; align-items:center; font-size:12.5px" }, box, "不统计这台设备上的访问（在你自己常用的手机、电脑上各点一次）");
+};
+async function openStats(target) {
+  let days = 30, close;
+  const body = el("div", { class: "dash" }, el("div", { class: "empty" }, "读取中…"));
+  const select = el("select", { onchange: () => { days = Number(select.value); load(); } }, ...[[7, "最近 7 天"], [30, "最近 30 天"], [90, "最近 90 天"]].map(([v, t]) => el("option", { value: v, selected: v === 30 }, t)));
+  close = present(target, "访问统计", [select], body);
+  if (!target) [...document.querySelectorAll(".modal")].at(-1).classList.add("wide");
+  async function load() {
+    body.replaceChildren(el("div", { class: "empty" }, "读取中…"));
+    const data = await (await getJson(`/api/admin/stats?days=${days}`)).json();
+    if (data.setup) return body.replaceChildren(el("div", { class: "msg err" }, "还没有配置统计令牌。"));
+    if (data.errors) return body.replaceChildren(el("div", { class: "msg err" }, data.errors.join("；")));
+    // 补齐没有数据的日子，并拆成本周期 / 上一周期
+    const byDate = new Map(data.daily.map((row) => [row.date, row]));
+    const dates = (count, endOffset) => Array.from({ length: count }, (_, i) => new Date(Date.now() - (endOffset + count - 1 - i) * 86_400_000).toISOString().slice(0, 10));
+    const current = dates(days, 0).map((date) => ({ date, views: byDate.get(date)?.views ?? 0, visits: byDate.get(date)?.visits ?? 0 }));
+    const previous = dates(days, days).map((date) => byDate.get(date) ?? { views: 0, visits: 0 });
+    const sum = (rows, key) => rows.reduce((acc, row) => acc + row[key], 0);
+    const views = sum(current, "views"), visits = sum(current, "visits"), pViews = sum(previous, "views"), pVisits = sum(previous, "visits");
+    const deviceTotal = data.devices.reduce((acc, row) => acc + row.count, 0);
+    const mobile = data.devices.filter((row) => row.name === "mobile" || row.name === "tablet").reduce((acc, row) => acc + row.count, 0);
+    const external = data.referers.filter((row) => !SELF.test(row.name));
+    const kpi = (label, value, delta, note) => el("div", { class: "kpi" }, el("div", { class: "label" }, label), el("div", { class: "value" }, value), delta ?? el("div", { class: "delta flat" }, note ?? ""));
+    body.replaceChildren(
+      el("div", { class: "kpis" },
+        kpi("页面浏览", fmt(views), deltaOf(views, pViews)),
+        kpi("访问次数", fmt(visits), deltaOf(visits, pVisits)),
+        kpi("每次访问看的页面", visits ? (views / visits).toFixed(1) : "—", null, "越高说明看得越深"),
+        kpi("手机访问占比", deviceTotal ? `${pct(mobile, deviceTotal)}%` : "—", null, "含平板")),
+      el("div", { class: "card" }, el("h3", {}, "每天的访问", el("span", { class: "legend" }, el("span", {}, el("i", { style: "background:#141414" }), "页面浏览"), el("span", {}, el("i", { style: "background:#a8957c" }), "访问次数"))), trendChart(current, body.clientWidth - 30)),
+      el("div", { class: "grid2" },
+        el("div", { class: "card" }, el("h3", {}, "访问渠道", el("small", {}, "从哪里来")), barList(data.channels ?? groupRows(external, channelOf)),
+          (data.channels ? data.referers.length : external.some((row) => channelOf(row.name) === "其他网站")) ? el("details", { class: "help", style: "margin-top:8px" }, el("summary", {}, data.channels ? "来源网站明细" : "其他网站明细"), barList(data.channels ? data.referers : external.filter((row) => channelOf(row.name) === "其他网站"))) : null),
+        el("div", { class: "card" }, el("h3", {}, "看得最多的页面"), barList(data.pages, { label: pageLabel }))),
+      el("div", { class: "grid3" },
+        el("div", { class: "card" }, el("h3", {}, "设备"), donut(data.devices, (name) => DEVICES[name] ?? name)),
+        el("div", { class: "card" }, el("h3", {}, "系统"), barList(data.systems, { label: (name) => SYSTEMS[name] ?? name })),
+        el("div", { class: "card" }, el("h3", {}, "浏览器 / App"), barList(data.browsers, { label: (name) => BROWSERS[name] ?? name }))),
+      el("div", { class: "grid2" },
+        el("div", { class: "card" }, el("h3", {}, "访客地区"), barList(data.countries, { label: regionLabel })),
+        el("div", { class: "card" }, el("h3", {}, "一天中什么时候来"), hourChart(data.hours ?? []))),
+      el("p", { class: "meta", style: "color:var(--muted); font-size:12px; margin:0" }, data.source === "self"
+        ? "数字来自网站自己的计数：每打开一个页面记一次，不抽样，不记录 IP 等个人信息。「访问」是一次打开网站（关掉浏览器标签页后再来算新的一次）。在微信、小红书等 App 里点开的链接会按 App 归类；站内页面之间的跳转不算渠道。"
+        : "数字来自 Cloudflare 网站统计，访问量少时是抽样估算（常见 10 的倍数）。网站自己的计数开始积累数据后，这里会自动换成更准确的数字。"),
+      trackToggle(),
+    );
+  }
+  load();
+}
+
+
+// ---------- 空间用量与清理 ----------
+const formatSize = (bytes) => bytes >= 1024 ** 3 ? `${(bytes / 1024 ** 3).toFixed(2)} GB` : bytes >= 1024 ** 2 ? `${(bytes / 1024 ** 2).toFixed(1)} MB` : `${Math.round(bytes / 1024)} KB`;
+async function openStorage() {
+  const box = $("#storage-box");
+  box.replaceChildren(el("div", { class: "meta", style: "margin-top:8px" }, "统计中，文件多的话需要几秒…"));
+  const data = await (await getJson("/api/admin/storage")).json();
+  if (data.errors) return showMsg(box, "err", "读取失败：", data.errors);
+  const top = data.folders.slice(0, 12);
+  box.replaceChildren(
+    el("p", { style: "margin:10px 0 4px" }, `一共 ${formatSize(data.total.size)}，${data.total.count} 个文件。`),
+    el("table", { class: "check" }, el("tr", {}, el("th", {}, "文件夹"), el("th", {}, "大小"), el("th", {}, "文件数")),
+      ...top.map((folder) => el("tr", {}, el("td", {}, folder.name), el("td", {}, formatSize(folder.size)), el("td", {}, String(folder.count))))),
+    el("div", { style: "margin-top:14px; font-weight:500" }, "可以清理的文件"),
+    ...data.categories.map((cat) => el("div", { style: "border-top:1px solid var(--line); padding:8px 0" },
+      el("div", { style: "display:flex; gap:8px; align-items:center" },
+        el("span", { style: "flex:1" }, `${cat.title} · ${cat.count ? `${cat.count} 个，${formatSize(cat.size)}` : "没有"}`),
+        cat.count ? el("button", { class: "link danger", onclick: async () => {
+          const typed = prompt(`彻底删除「${cat.title}」：${cat.count} 个文件，${formatSize(cat.size)}。删除后不能恢复。\n确认请输入：删除`);
+          if (typed !== "删除") return;
+          const response = await getJson("/api/admin/storage", { method: "POST", body: JSON.stringify({ category: cat.id, confirm: "删除" }) });
+          const result = await response.json().catch(() => ({}));
+          if (!response.ok) return showMsg(box, "err", "删除失败：", result.errors);
+          await openStorage();
+          box.prepend(el("div", { class: "msg ok" }, `已删除 ${result.deleted} 个文件，腾出 ${formatSize(result.size)}。`));
+        } }, "清理") : null),
+      el("div", { class: "meta", style: "color:var(--muted); font-size:12px" }, cat.note),
+      cat.count ? el("details", { class: "help" }, el("summary", {}, "看看是哪些文件"), el("div", { style: "font-family:monospace; font-size:11px; word-break:break-all" }, ...cat.sample.map((key) => el("div", {}, key)), cat.count > cat.sample.length ? el("div", {}, `…还有 ${cat.count - cat.sample.length} 个`) : null)) : null)),
+  );
+}
+
+
+// ---------- 左侧导航：一次只显示一个页面，网址带 #页面名，刷新后停在同一页 ----------
+const VIEW_LOADERS = { site: () => openSiteSettings($("#view-site")), about: () => openAbout($("#view-about")), stats: () => openStats($("#view-stats")), storage: () => openStorage() };
+const loadedViews = new Set();
+function showView(name) {
+  const button = document.querySelector(`#nav button[data-view="${name}"]:not([hidden])`) ?? document.querySelector('#nav button[data-view="works"]');
+  name = button.dataset.view;
+  document.querySelectorAll("#nav button[data-view]").forEach((b) => b.classList.toggle("on", b === button));
+  document.querySelectorAll(".view").forEach((view) => { view.hidden = view.dataset.view !== name; });
+  if (location.hash.slice(1) !== name) history.replaceState(null, "", `#${name}`);
+  if (VIEW_LOADERS[name] && !loadedViews.has(name)) { loadedViews.add(name); VIEW_LOADERS[name](); }
+  window.scrollTo(0, 0);
+}
+$("#storage-open").addEventListener("click", openStorage);
+document.querySelectorAll("#nav button[data-online]").forEach((b) => { b.hidden = !ONLINE; });
+document.querySelectorAll("#nav button[data-view]").forEach((b) => b.addEventListener("click", () => showView(b.dataset.view)));
+window.addEventListener("hashchange", () => showView(location.hash.slice(1)));
+showView(location.hash.slice(1) || "works");
+
+async function purge(id, name) {
+  const typed = prompt(`彻底删除「${name}」，连同 R2 里的全部视频和封面，不能恢复。\n确认请输入编号：${id}`);
+  if (typed !== id) return;
+  const response = await getJson("/api/admin/purge", { method: "POST", body: JSON.stringify({ groupId: id, confirm: id }) });
+  const result = await response.json();
+  showMsg($("#save-msg"), response.ok ? "ok" : "err", response.ok ? `已彻底删除，共清理 ${result.deleted} 个文件。` : "删除失败：", result.errors);
+  if (response.ok) await load();
+}
+
+// 回到这个标签页时检查文件是否被别处改过：没有未保存修改就自动载入最新内容，有的话提示
+window.addEventListener("focus", async () => {
+  const data = await (await getJson(API.data)).json().catch(() => null);
+  if (!data || data.version === version) return;
+  if (!isDirty()) { await load(); showMsg($("#save-msg"), "ok", "作品数据在别处被更新过，已自动载入最新内容。"); }
+  else showMsg($("#save-msg"), "err", "作品数据在别处被更新过。你这里有未保存的修改，直接保存会被拒绝；请先记下修改，点「放弃修改」载入最新内容后再改。");
+});
+load();
+</script>
+</body>
+</html>

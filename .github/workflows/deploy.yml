@@ -1,0 +1,58 @@
+# 手动部署网站到 Cloudflare（Actions → deploy → Run workflow）。
+# 需要仓库 Secret：CLOUDFLARE_API_TOKEN（模板 Edit Cloudflare Workers）。
+# 需要仓库 Variable：CLOUDFLARE_ACCOUNT_ID（Cloudflare 账号 ID，不是密钥，放在 Variables 里）。
+# 部署前自动构建并检查；出问题可在 Cloudflare 后台 Workers → 你的 Worker → Deployments 一键回滚。
+name: deploy
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 11 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - name: 构建
+        run: pnpm exec vinext build
+      - name: 准备静态文件（视频走 R2，不打包进网站）
+        run: bash scripts/prepare-deploy-assets.sh
+      - name: 部署前检查
+        run: |
+          test -f dist/server/index.js
+          test -f dist/client-deploy/admin/index.html
+          ! find dist/client-deploy -name '*.mp4' | grep -q .
+          pnpm exec wrangler deploy -c wrangler.deploy.jsonc --dry-run
+      - name: 部署
+        run: pnpm exec wrangler deploy -c wrangler.deploy.jsonc
+      - name: 写入后台密钥（密码、转码回调、GitHub 令牌、访问统计）
+        env:
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          MEDIA_CALLBACK_SECRET: ${{ secrets.MEDIA_CALLBACK_SECRET }}
+          WORKER_GITHUB_TOKEN: ${{ secrets.WORKER_GITHUB_TOKEN }}
+          CF_ANALYTICS_TOKEN: ${{ secrets.CF_ANALYTICS_TOKEN }}
+        run: |
+          node -e '
+            const out = {};
+            if (process.env.ADMIN_PASSWORD) out.ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+            if (process.env.MEDIA_CALLBACK_SECRET) out.MEDIA_CALLBACK_SECRET = process.env.MEDIA_CALLBACK_SECRET;
+            if (process.env.WORKER_GITHUB_TOKEN) out.GITHUB_TOKEN = process.env.WORKER_GITHUB_TOKEN;
+            if (process.env.CF_ANALYTICS_TOKEN) out.CF_ANALYTICS_TOKEN = process.env.CF_ANALYTICS_TOKEN;
+            if (process.env.CLOUDFLARE_ACCOUNT_ID) out.CF_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID;
+            require("fs").writeFileSync("/tmp/secrets.json", JSON.stringify(out));
+            console.log("secrets:", Object.keys(out).join(", ") || "none");
+          '
+          pnpm exec wrangler secret bulk /tmp/secrets.json -c wrangler.deploy.jsonc
+          rm -f /tmp/secrets.json
