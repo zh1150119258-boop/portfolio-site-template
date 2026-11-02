@@ -1,5 +1,7 @@
 # 作品集网站模板
 
+> **English:** A Claude Code–guided starter for video-first portfolio sites on Cloudflare Workers + R2: online admin (`/admin`) with chunked uploads, automatic FFmpeg transcoding via GitHub Actions (poster / preview / 1440p stream / original), playback rules tuned for mobile, edge page caching, SEO (sitemap with video entries, VideoObject), and a reference-site cloning toolkit (tech fingerprint, interaction capture, pixel diff). The page design is intentionally a neutral placeholder: Claude interviews the site owner first and designs the pages to their taste. Docs are in Chinese; open the repo in Claude Code and ask in any language. MIT licensed.
+
 一套做个人作品集网站的「底座」（特别适合视频、剪辑、影像作品），由 Claude 带你一步步搭好。
 
 **网站长什么样由你决定。** Claude 会先问你的想法和喜欢的风格，再为你设计页面；仓库里自带的页面只是能打开的占位版式。
@@ -43,5 +45,7 @@
 - 网站上的介绍、履历、作品说明都由你自己填，模板里的文字只是占位。
 
 ---
+
+开源协议：MIT（见 [LICENSE](LICENSE)），欢迎复制、修改、分享。复刻工具改编自 MIT 协议的项目，版权声明见 `tools/clone/LICENSE`。
 
 技术说明（给 Claude 和开发者）：见 [CLAUDE.md](CLAUDE.md) 和 [.claude/skills/cloudflare-portfolio-site/SKILL.md](.claude/skills/cloudflare-portfolio-site/SKILL.md)。
