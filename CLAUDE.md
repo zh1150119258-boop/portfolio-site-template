@@ -47,5 +47,8 @@
 ## 本地预览小技巧
 
 - `pnpm dev` 时后台 `/admin` 不需要登录，数据存在本机模拟的存储桶（`.wrangler/state`），不会碰线上。
-- 本地没有 GitHub 转码，可以用 `scripts/ci-process-group.sh` 在本机转好，再通过 `/api/admin/dev-put` 写入模拟存储桶、用 `/api/media-callback`（本地口令 `local-dev-only`）标记完成。
+- `pnpm dev` 的地址是 **http://localhost:3000**（后台 http://localhost:3000/admin/）。
+- 本地没有 GitHub 转码：在后台上传后会提示「转码服务还没有配置」，这是正常的。接着运行
+  `bash scripts/local-transcode.sh <作品组编号> <原片1> [原片2 …]`（编号在后台作品详情或 `/api/admin/works` 里看，原片按上传顺序给），
+  它会用和线上一样的转码脚本生成四个版本、写进本地模拟存储桶，并标记「已就绪」，作品就出现在本地网站上。
 - 改完跑 `pnpm typecheck`、`pnpm lint`、`pnpm build`。

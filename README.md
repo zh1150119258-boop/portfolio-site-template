@@ -25,7 +25,7 @@
 3. 想好：网站上显示的名字、一句话介绍、用来登录后台的邮箱。域名可以先不买，Claude 会告诉你什么时候需要。
 
 ### 第一步：复制一份到你自己的 GitHub
-- 如果这个仓库是公开的，或者你已被加为协作者：打开仓库页面，点右上角绿色的 **「Use this template」→「Create a new repository」**（没有这个按钮就点 **Fork**）。
+- 打开本仓库页面，点右上角绿色的 **「Use this template」→「Create a new repository」**。
 - 仓库名随便起（例如 `my-portfolio`），建议选 **Private（私有）**，然后点 **Create repository**。
 
 ### 第二步：在 Claude 里打开你的仓库

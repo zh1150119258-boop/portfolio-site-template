@@ -16,6 +16,7 @@ description: 网站主人想参考 / 复刻某个网站的版式、动效和交�
 - **版权**：参考站的文字、图片、视频、商标、字体文件（除非是开源字体）不能放进主人的网站。只参考版式、比例、节奏和交互；内容和素材全部换成主人的。和主人说清楚这一点。
 - 不确定能否访问（需要登录、有付费墙、明确禁止抓取）时停下来，告诉主人，不要猜隐藏的状态。
 - 不说「像素级一模一样」，除非那个状态、那个尺寸真的测过。
+- **打不开参考站时**：在网页版 Claude Code（claude.ai/code）里，云端环境的网络设置可能不允许访问这个网站（工具报 `ERR_TUNNEL_CONNECTION_FAILED` 或 403）。告诉主人网站名，请他在环境设置的「网络访问」里把这个域名加进允许列表，或换成更宽的访问级别（说明：https://code.claude.com/docs/en/cloud-environments#network-access ）。也可以用 Claude in Chrome 在主人自己的浏览器里截图、量尺寸作为证据。不要凭印象补。
 
 ## 必须遵守
 
@@ -32,7 +33,7 @@ description: 网站主人想参考 / 复刻某个网站的版式、动效和交�
 |---|---|
 | `pnpm clone:fingerprint <参考网址>` | 检测参考站用了什么技术（框架、视频、平滑滚动、GSAP、Canvas、WebGL），决定用什么方式实现 |
 | `pnpm clone:capture <交互计划.json> --url <网址>` | 按计划在指定时间点（例如 0 / 50 / 180 / 500 毫秒）截下交互过程，用来看打开、关闭、滚动的动画 |
-| `pnpm clone:compare <对比清单.json> --source-url <参考站> --candidate-url http://localhost:5173` | 参考站和本地页面做同样的操作，同尺寸截图，逐像素对比 + 元素位置、尺寸、样式、文字对比，出报告 |
+| `pnpm clone:compare <对比清单.json> --source-url <参考站> --candidate-url http://localhost:3000` | 参考站和本地页面做同样的操作，同尺寸截图，逐像素对比 + 元素位置、尺寸、样式、文字对比，出报告 |
 | `pnpm clone:diff <参考.png> <本地.png> <差异图.png>` | 两张同尺寸截图生成差异图 |
 
 计划 / 清单的写法参考 `tools/clone/examples/`（`interaction.plan.json`、`fidelity.matrix.json`）。
