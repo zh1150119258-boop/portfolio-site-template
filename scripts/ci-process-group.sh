@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# GitHub Actions 用的转码脚本（Ubuntu / bash）。规格与 scripts/add-video-group.sh 完全一致：
+# GitHub Actions 用的转码脚本（Ubuntu / bash），本地预览时 scripts/local-transcode.sh 也调用它。规格：
 #   原画  <媒体文件夹>/clip-NN.mp4                 （H.264/HEVC 不重新压缩，只整理为 faststart；其他格式转高质量 H.264）
 #   流畅  streams-balanced/<媒体文件夹>/clip-NN.mp4 （长边 1440，CRF 20，带声音）
 #   预览  previews/<媒体文件夹>/clip-NN.mp4         （长边 540，约 700k，无声音）

@@ -118,6 +118,7 @@ description: 用 Cloudflare Worker + R2 + GitHub Actions 搭建或维护以视�
 3. 主人想参考 / 复刻某个网站时，按 `clone-website` 技能做（`.claude/skills/clone-website/SKILL.md`，工具在 `tools/clone/`）：先录证据和交互，再分层实现，最后和参考站逐像素对比。参考站的素材和文字不能直接上线（版权），只参考版式和交互，内容全部用主人自己的。
 4. 每改完一页本地预览截图给主人确认，再继续下一页；全部确认后再部署。
 5. 视觉和播放性能一起考虑：大的开场动画、首屏多个视频都会拖慢手机速度。
+6. 字体：访客主要在国内时，不要只靠 Google Fonts（国内经常加载慢或失败），字体栈里一定写上系统中文字体兜底（PingFang SC、Songti SC、Noto Sans/Serif SC），或者把开源字体文件放进 `public/` 自己托管。
 
 ## 5. SEO
 
