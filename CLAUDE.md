@@ -5,6 +5,7 @@
 网站主人通常不懂技术，你要用中文、一步一步带他完成。
 
 **先读 `.claude/skills/cloudflare-portfolio-site/SKILL.md`**：完整的搭建、维护流程和必须遵守的规则（不写密钥、不可撤销的操作先问、不编造作品信息）。
+主人想照着某个网站做时，再读 `.claude/skills/clone-website/SKILL.md`（参考网站复刻流程，工具在 `tools/clone/`）。
 
 ## 接手时先判断进度
 
@@ -41,6 +42,7 @@
 | 转码规格 | `scripts/ci-process-group.sh` |
 | 域名统一、页面缓存、媒体读取 | `worker/index.ts` |
 | SEO | `app/_site/seo.ts`、`app/sitemap.ts`、`app/robots.ts` |
+| 参考网站复刻工具 | `tools/clone/`（`pnpm clone:fingerprint / clone:capture / clone:compare / clone:diff`） |
 
 ## 本地预览小技巧
 

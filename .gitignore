@@ -42,3 +42,6 @@ next-env.d.ts
 /.pnpm-store/
 .pnpm-store/
 *.tsbuildinfo
+
+# 复刻工具的输出（截图、报告）
+/.workbench/

@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "fixtureRoot": "tools/clone/fixtures",
+  "fallbackFile": "fixture.html",
+  "readyExpression": "window.fixtureReady === true",
+  "viewports": [
+    { "name": "desktop", "width": 1440, "height": 900 },
+    { "name": "mobile", "width": 390, "height": 844 }
+  ],
+  "states": [
+    {
+      "id": "film-opening",
+      "path": "/video-editorial",
+      "triggerActions": [{ "type": "click", "selector": "[data-open-film]" }],
+      "timestampsMs": [0, 50, 180, 500],
+      "selectors": [
+        { "id": "overlay", "selector": "[data-film-overlay]" },
+        { "id": "surface", "selector": ".film-surface" }
+      ]
+    },
+    {
+      "id": "film-closing",
+      "path": "/video-editorial",
+      "setupActions": [
+        { "type": "click", "selector": "[data-open-film]" },
+        { "type": "wait", "ms": 550 }
+      ],
+      "triggerActions": [{ "type": "click", "selector": "[data-close-film]" }],
+      "timestampsMs": [0, 50, 180, 500],
+      "selectors": [
+        { "id": "overlay", "selector": "[data-film-overlay]" },
+        { "id": "media", "selector": "[data-film-overlay] video" }
+      ]
+    },
+    {
+      "id": "touch-release",
+      "path": "/video-editorial",
+      "viewports": ["mobile"],
+      "hasTouch": true,
+      "isMobile": true,
+      "triggerActions": [{ "type": "touchSwipe", "deltaY": 480, "steps": 8, "stepMs": 16 }],
+      "timestampsMs": [0, 50, 180, 500],
+      "selectors": [{ "id": "document", "selector": "article[data-editorial]" }]
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+  <head><meta charset="utf-8" /><title>Fixture Frame</title></head>
+  <body>
+    <main>
+      <p data-frame-state aria-live="polite">Frame waiting</p>
+      <button data-frame-complete type="button">Complete embedded step</button>
+    </main>
+    <script>
+      addEventListener("message", (event) => {
+        if (event.origin === location.origin && event.data?.type === "fixture-parent-ready") document.querySelector("[data-frame-state]").textContent = "Frame ready";
+      });
+      document.querySelector("[data-frame-complete]").addEventListener("click", () => {
+        document.querySelector("[data-frame-state]").textContent = "Frame complete";
+        parent.postMessage({ type: "fixture-frame-complete", value: "synthetic-step" }, location.origin);
+      });
+    </script>
+  </body>
+</html>

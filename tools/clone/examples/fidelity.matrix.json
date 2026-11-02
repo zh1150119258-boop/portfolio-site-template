@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "fixtureRoot": "tools/clone/fixtures",
+  "fallbackFile": "fixture.html",
+  "readyExpression": "window.fixtureReady === true",
+  "thresholds": {
+    "channelThreshold": 0.08,
+    "maxGeometryDeltaPx": 0.5,
+    "maxMissingSelectors": 0,
+    "maxPixelChangedRatio": 0.01,
+    "maxTextMismatches": 0
+  },
+  "viewports": [
+    { "name": "desktop", "width": 1440, "height": 900 },
+    { "name": "mobile", "width": 390, "height": 844 }
+  ],
+  "routes": [
+    {
+      "id": "marketing",
+      "path": "/marketing",
+      "selectors": [
+        { "id": "headline", "selector": "main h1" },
+        { "id": "actions", "selector": ".actions" }
+      ],
+      "states": [
+        { "id": "initial" },
+        {
+          "id": "dialog-open",
+          "actions": [
+            { "type": "click", "selector": "[data-open-dialog]" },
+            { "type": "wait", "ms": 50 }
+          ],
+          "selectors": [
+            { "id": "dialog", "selector": "dialog" },
+            { "id": "dialog-title", "selector": "#dialog-title" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "video-editorial",
+      "path": "/video-editorial",
+      "substituteMediaSelectors": ["[data-native-video]"],
+      "states": [
+        {
+          "id": "film-opening",
+          "actions": [
+            { "type": "click", "selector": "[data-open-film]" },
+            { "type": "seekAnimations", "ms": 180 }
+          ],
+          "selectors": [
+            { "id": "overlay", "selector": "[data-film-overlay]" },
+            { "id": "surface", "selector": ".film-surface" }
+          ],
+          "maskSelectors": ["[data-film-video]"],
+          "maskReason": "Generated fixture video frames are intentionally nondeterministic; overlay geometry and surrounding pixels remain compared.",
+          "thresholds": { "maxPixelChangedRatio": 0.03 }
+        }
+      ]
+    }
+  ]
+}
